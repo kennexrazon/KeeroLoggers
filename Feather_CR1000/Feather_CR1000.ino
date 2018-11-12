@@ -1,7 +1,7 @@
 #include <avr/dtostrf.h>
 
 //define sensor name/s
-#define SENSEID "00"
+#define SENSEID "01"
 #define AREA "BCM"
 #define SITE "PDE"
 #define terminator "$"
@@ -72,14 +72,15 @@ struct gkn_data{
 void setup() {
   Serial.begin(BAUD);
   CR1000.begin(BAUD);
-
+  pinMode(donePin,OUTPUT);
+  
+  digitalWrite(LED_BUILTIN,HIGH);
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
 
   delay(100);
 
   Serial.println("Feather LoRa TX Test!");
-
   // manual reset
   digitalWrite(RFM95_RST, LOW);
   delay(10);
@@ -107,6 +108,7 @@ void setup() {
   Serial.println("done setup");
   
 //  while(!Serial.available());
+  delay(1000);
   struct gkn_data data = send_cr();
   char line1[200] =  AREA;
   char line2[200] =  AREA;
@@ -121,15 +123,16 @@ void setup() {
   sendLine(line2,93,2);
   sendLine(line3,62,3);
   
-  Serial.println("#################################3");
+  Serial.println("#################################");
+  digitalWrite(LED_BUILTIN,LOW);
   digitalWrite(donePin,HIGH);
 
 }
 
 void loop() {
-
-Serial.println("."); 
-delay(1000);   
+  digitalWrite(donePin,HIGH);
+  Serial.println("."); 
+  delay(1000);   
 }
 
 
