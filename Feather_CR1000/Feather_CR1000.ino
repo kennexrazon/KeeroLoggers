@@ -9,6 +9,7 @@
 //define pin assignments
 #define donePin A0  //done pin for tpl
 #define randomPin A1  //pin for generating random seed for random delay when sending
+#define switchPin A2
 #define somsPin A3  //SOMS input
 #define sendTrials 5  //number of send retries before exit
 
@@ -73,6 +74,7 @@ void setup() {
   Serial.begin(BAUD);
   CR1000.begin(BAUD);
   pinMode(donePin,OUTPUT);
+  pinMode(switchPin,OUTPUT);
   
   digitalWrite(LED_BUILTIN,HIGH);
   pinMode(RFM95_RST, OUTPUT);
@@ -106,11 +108,14 @@ void setup() {
   //randomSeed(analogRead(randomPin));
   blinkled();
   Serial.println("done setup");
-  
+
+  switchGKNon();
 //  while(!Serial.available());
   delay(1000);
   struct gkn_data data = send_cr();
-  char line1[200] =  AREA;
+
+  // limit is 240 chars
+  char line1[200] =  AREA; 
   char line2[200] =  AREA;
   char line3[200] =  AREA;
   
@@ -118,10 +123,9 @@ void setup() {
   buildLine_05(line2,data);
   buildLine_06(line3,data);
 
-
-  sendLine(line1,125,1);
-  sendLine(line2,93,2);
-  sendLine(line3,62,3);
+  sendLine(line1,strlen(line1),1);
+  sendLine(line2,strlen(line2),2);
+  sendLine(line3,strlen(line3),3);
   
   Serial.println("#################################");
   digitalWrite(LED_BUILTIN,LOW);
@@ -130,6 +134,7 @@ void setup() {
 }
 
 void loop() {
+  switchGKNoff();
   digitalWrite(donePin,HIGH);
   Serial.println("."); 
   delay(1000);   
@@ -191,52 +196,52 @@ void buildLine_04(char* line, struct gkn_data dt){
   
   buildID(line,sensorType);
   if (TILT1){
-    strcat(line,"T1:");
+    strncat(line,"T1:",4);
     dt.t1a.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
     dt.t1b.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
-    strcat(line, "0.0");
-    strcat(line,";");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
+    strncat(line, "0.0",4);
+    strncat(line,";",2);
   }  
   if (TILT2){
-    strcat(line,"T2:");
+    strncat(line,"T2:",4);
     dt.t2a.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
     dt.t2b.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
-    strcat(line, "0.0");
-    strcat(line,";");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
+    strncat(line, "0.0",4);
+    strncat(line,";",2);
   }
   if (TILT3){
-    strcat(line,"T3:");
+    strncat(line,"T3:",4);
     dt.t3a.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
     dt.t3b.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
-    strcat(line, "0.0");
-    strcat(line,";");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
+    strncat(line, "0.0",4);
+    strncat(line,";",2);
   }
 
   if (TILT4){
-    strcat(line,"T4:");
+    strncat(line,"T4:",4);
     dt.t4a.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
     dt.t4b.toCharArray(tmpString,10);
-    strcat(line, tmpString);
-    strcat(line,",");
-    strcat(line, "0.0");
-    strcat(line,";");
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
+    strncat(line, "0.0",4);
+    strncat(line,";",2);
   }
 
-  strcat(line,"$");
+  strncat(line,"$",2);
   Serial.println(line);
 }
 
@@ -456,6 +461,16 @@ void blinkled(){
   delay(100);                       // wait for a second
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
   delay(100);                       // wait for a second
+}
+
+void switchGKNon(){
+  digitalWrite(switchPin,HIGH);
+  delay(500);
+}
+
+void switchGKNoff(){
+  digitalWrite(switchPin,LOW);
+  delay(500);
 }
 
 void assignNull(char* txt){
