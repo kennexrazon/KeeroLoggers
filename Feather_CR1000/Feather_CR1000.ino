@@ -5,6 +5,7 @@
 #define AREA "BCM"
 #define SITE "PDE"
 #define terminator "$"
+#define GknOnDelay 30000
 
 //define pin assignments
 #define donePin A0  //done pin for tpl
@@ -54,10 +55,12 @@ struct gkn_data{
   String t2a; String t2b;
   String t3a; String t3b;
   String t4a; String t4b;
+  String t5a; String t5b;
   String t1t;
   String t2t;
   String t3t;
   String t4t;
+  String t5t;
   
   String dl_batt;
   String dl_temp;
@@ -72,7 +75,7 @@ struct gkn_data{
 
 void setup() {
   Serial.begin(BAUD);
-  CR1000.begin(BAUD);
+ 
   pinMode(donePin,OUTPUT);
   pinMode(switchPin,OUTPUT);
   
@@ -110,8 +113,8 @@ void setup() {
   Serial.println("done setup");
 
   switchGKNon();
-//  while(!Serial.available());
-  delay(1000);
+  CR1000.begin(BAUD);
+
   struct gkn_data data = send_cr();
 
   // limit is 240 chars
@@ -146,18 +149,18 @@ struct gkn_data send_cr(){
   int flag1 = 0;
   String prompt = "CR1000>";
   String ellipsis = " ...";
-  int limit = 8;  
+  int limit = 7;  
   int len = 0;
   struct gkn_data dt;
   if ( !CR1000.available()){
       CR1000.write('\r');
-      delay(10);    
+      delay(500);    
   }
   while ( (limit > 0)){
     if ( flag1 == 0){
-      for (int i = 0; i < 1; i++){
+      for (int i = 0; i < 5; i++){
         CR1000.write('\r');
-        delay(10);
+        delay(100);
       }
     }
     inLine  = CR1000.readStringUntil('\r\n');
@@ -241,6 +244,17 @@ void buildLine_04(char* line, struct gkn_data dt){
     strncat(line,";",2);
   }
 
+  if (TILT5){
+    strncat(line,"T5:",4);
+    dt.t5a.toCharArray(tmpString,10);
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
+    dt.t5b.toCharArray(tmpString,10);
+    strncat(line, tmpString,10);
+    strncat(line,",",2);
+    strncat(line, "0.0",4);
+    strncat(line,";",2);
+  }
   strncat(line,"$",2);
   Serial.println(line);
 }
@@ -323,8 +337,10 @@ struct gkn_data parseLine(String line){
   String t2a = "tilt2_angle_a"; String t2b = "tilt2_angle_b";
   String t3a = "tilt3_angle_a"; String t3b = "tilt3_angle_b";
   String t4a = "tilt4_angle_a"; String t4b = "tilt4_angle_b";
+  String t5a = "tilt5_angle_a"; String t5b = "tilt5_angle_b";
   String t1t = "tilt1_temp"; String t2t = "tilt2_temp";
   String t3t = "tilt3_temp"; String t4t = "tilt4_temp";
+  String t5t = "tilt5_temp";
   String ec1 = "ec_5_1"; 
   String ec2 = "ec_5_2";
   String ec3 = "ec_5_3";
@@ -367,6 +383,12 @@ struct gkn_data parseLine(String line){
   } else if (line.startsWith(t4b)){
     struct_gkn_dta.t4b = line.substring(index1 + 1);
     Serial.println(struct_gkn_dta.t4b);     
+  } else if (line.startsWith(t5a)){
+    struct_gkn_dta.t5a = line.substring(index1 + 1);
+    Serial.println(struct_gkn_dta.t4a);     
+  } else if (line.startsWith(t5b)){
+    struct_gkn_dta.t5b = line.substring(index1 + 1);
+    Serial.println(struct_gkn_dta.t5b);
   } else if (line.startsWith(t1t)){
     struct_gkn_dta.t1t = line.substring(index1 + 1);
     Serial.println(struct_gkn_dta.t1t);     
@@ -379,6 +401,9 @@ struct gkn_data parseLine(String line){
   } else if (line.startsWith(t4t)){
     struct_gkn_dta.t4t = line.substring(index1 + 1);
     Serial.println(struct_gkn_dta.t4t);     
+  } else if (line.startsWith(t5t)){
+    struct_gkn_dta.t5t = line.substring(index1 + 1);
+    Serial.println(struct_gkn_dta.t5t); 
   }else if (line.startsWith(ec1)){
     struct_gkn_dta.ec1 = line.substring(index1 + 1);
     Serial.println(struct_gkn_dta.ec1);     
@@ -465,7 +490,14 @@ void blinkled(){
 
 void switchGKNon(){
   digitalWrite(switchPin,HIGH);
-  delay(500);
+  delay(GknOnDelay);
+  delay(GknOnDelay);
+  delay(GknOnDelay);
+  delay(GknOnDelay);
+  
+//  delay(GknOnDelay);
+//  delay(GknOnDelay);
+//  delay(GknOnDelay);
 }
 
 void switchGKNoff(){
