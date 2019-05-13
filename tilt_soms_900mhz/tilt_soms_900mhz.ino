@@ -14,12 +14,12 @@
 #define RFM95_INT 7
 #define RF95_FREQ 915.0
 
-#define SENSEID "10"
+#define SENSEID "18"
 #define AREA "BCM"
-// PLI - Palayan Interface
-// PRS - 
-// LRD - Loop Road
-#define SITE "PLI"
+// PLI - 10 - 12 Palayan Interface
+// PRS - 13 - 15
+// LRD - 16 - 18 Loop Road
+#define SITE "LRD"
 #define terminator "$"
 
 #define VBATPIN A9
