@@ -38,8 +38,7 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT); // Singleton instance of the radio driver
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
 
-void setup(void)
-{
+void setup(void){
   Serial.begin(9600);
   delay(2000);
   Serial.print(AREA);Serial.print("-");
@@ -63,9 +62,7 @@ void setup(void)
   Serial.println("");
   */
 
-  bno.setExtCrystalUse(true);
-  //Serial.println("Calibration status values: 0=uncalibrated, 3=fully calibrated");
-  
+  bno.setExtCrystalUse(true); 
   //Start rx
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH);
@@ -122,41 +119,10 @@ struct lgr_data{
 void loop(void)
 {
   Serial.println("begin loop");
-  /*
-  imu::Vector<3> grvty = bno.getVector(Adafruit_BNO055::VECTOR_GRAVITY);
-  imu::Vector<3> mgntr = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
-  Serial.println("done init axl variables");
-  
-  //Read data from sensors: [1] axl (g's), [2] axl (m's), [3] power, [4] soms
-  char axlX[4];assignNull(axlX);
-  float gx = grvty.x()/9.8;
-  float gy = grvty.y()/9.8;
-  float gz = grvty.z()/9.8;
-
-  float mx = mgntr.x()/9.8;
-  float my = mgntr.y()/9.8;
-  float mz = mgntr.z()/9.8;
-  */
 
   struct imu_data imu = get_data_imu();
   struct lgr_data lgr = get_data_lgr();
-
-  // float somsADC = 0.0;
-  // float somsVWC = 0.0;
   
-  // somsADC = analogRead(somsPin);
-  // somsVWC = (0.004*somsADC) - 0.4839;//calibration equation from reference paper
-  
-  // delay(BNO055_SAMPLERATE_DELAY_MS);
-  // Serial.println("here");
-  
- /* 
-  float measuredvbat = analogRead(VBATPIN);
-  measuredvbat *= 2;    // we divided by 2, so multiply back
-  measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
-  measuredvbat /= 1024; // convert to voltage
-  Serial.print("VBat: " ); Serial.println(measuredvbat);
-*/
   char line1[50] = AREA;//axl gravity
   char line2[50] = AREA;//axl mag
   char line3[44] = AREA;//ina power + soms
@@ -166,10 +132,6 @@ void loop(void)
   buildLineAXL(line1,imu);
   buildLineMGR(line2,imu);
   buildLineSMS(line3,lgr);
-
-  // buildLineAxl(line1,"AXL",gx,gy,gz);
-  // buildLineAxl(line2,"MGR",mx,my,mz);
-  // buildLineOth(line3,measuredvbat,0,somsVWC);
 
   //transmit data
   sendLine(line1,50,1);
@@ -222,9 +184,9 @@ float get_bat_vol(){
   return measuredvbat;
 }
 
-float get_soms_VWC(int pin) {
 //calibration equation from reference paper
 // paper also averaged soms readings ( 10 samples )
+float get_soms_VWC(int pin) {
   float somsADC = 0.0;
   float soms_avg_vwc = 0.0;
   float somsVWC = 0.0;
@@ -339,7 +301,7 @@ void buildLineMGR(char* line, struct imu_data dt){
   strcat(line,",");
 
   dtostrf(dt.mgr_z,5,4,tmpString);
-  strcat(line,tmpString);
+  strncat(line,tmpString,5);
   
   Serial.println(line); 
 }
@@ -360,7 +322,7 @@ void buildLineSMS(char* line, struct lgr_data dt){
   strcat(line,",");
 
   dtostrf(dt.soms1,5,4,tmpString);
-  strcat(line,tmpString);
+  strncat(line,tmpString,5);
 
   Serial.println(line);
 }
