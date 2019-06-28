@@ -1,18 +1,20 @@
 #include <avr/dtostrf.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <RH_RF95.h>
 
-//define sensor name/s
 #define SENSEID "01"
 #define AREA "BCM"
 #define SITE "PDE"
 #define terminator "$"
-#define GknOnDelay 30000
+#define GknOnDelay 5000
 
 //define pin assignments
 #define donePin A0  //done pin for tpl
 #define randomPin A1  //pin for generating random seed for random delay when sending
 #define switchPin A2
 #define somsPin A3  //SOMS input
-#define sendTrials 5  //number of send retries before exit
+#define sendTrials 3  //number of send retries before exit
 
 #define TILT1 1
 #define TILT2 1
@@ -29,22 +31,23 @@
 
 
 //#include <utility/imumaths.h>
-#include <Wire.h>
 
-//#include <Adafruit_INA219.h>
-
-#include <SPI.h>
-#include <RH_RF95.h>
 
 //lib required #define and global variable declarations
 //#define BNO055_SAMPLERATE_DELAY_MS (100)
+//// for feather32u4 
+//#define RFM95_CS 8
+//#define RFM95_RST 4
+//#define RFM95_INT 7
+//#define RF95_FREQ 915.0
+
 #define RFM95_CS 8
 #define RFM95_RST 4
 #define RFM95_INT 3
 #define RF95_FREQ 433.0
 
 // Serial related defines
-#define BAUD 115200
+#define BAUD 57600
 #define CR1000 Serial1
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
@@ -112,8 +115,31 @@ void setup() {
   blinkled();
   Serial.println("done setup");
 
-  switchGKNon();
+  // switchGKNon();
   CR1000.begin(BAUD);
+
+  // struct gkn_data data = send_cr();
+
+  // // limit is 240 chars
+  // char line1[200] =  AREA; 
+  // char line2[200] =  AREA;
+  // char line3[200] =  AREA;
+  
+  // buildLine_04(line1,data);
+  // buildLine_05(line2,data);
+  // buildLine_06(line3,data);
+
+  // // sendLine(line1,strlen(line1),1);
+  // // sendLine(line2,strlen(line2),2);
+  // // sendLine(line3,strlen(line3),3);
+  
+  // Serial.println("#################################");
+  // digitalWrite(LED_BUILTIN,LOW);
+  // digitalWrite(donePin,HIGH);
+
+}
+
+void loop() {
 
   struct gkn_data data = send_cr();
 
@@ -126,17 +152,16 @@ void setup() {
   buildLine_05(line2,data);
   buildLine_06(line3,data);
 
-  sendLine(line1,strlen(line1),1);
-  sendLine(line2,strlen(line2),2);
-  sendLine(line3,strlen(line3),3);
+  // sendLine(line1,strlen(line1),1);
+  // sendLine(line2,strlen(line2),2);
+  // sendLine(line3,strlen(line3),3);
   
   Serial.println("#################################");
   digitalWrite(LED_BUILTIN,LOW);
   digitalWrite(donePin,HIGH);
 
-}
 
-void loop() {
+
   switchGKNoff();
   digitalWrite(donePin,HIGH);
   Serial.println("."); 
@@ -152,10 +177,18 @@ struct gkn_data send_cr(){
   int limit = 7;  
   int len = 0;
   struct gkn_data dt;
-  if ( !CR1000.available()){
+
+  if ( !CR1000.available() ) {
+    Serial.println("*");
+    CR1000.write('\r');
+    delay(1000);
+  }
+  /*
+  if ( CR1000.available()){
       CR1000.write('\r');
       delay(500);    
   }
+  */
   while ( (limit > 0)){
     if ( flag1 == 0){
       for (int i = 0; i < 5; i++){
@@ -164,6 +197,9 @@ struct gkn_data send_cr(){
       }
     }
     inLine  = CR1000.readStringUntil('\r\n');
+
+    Serial.println(inLine);
+    
     len = inLine.length();
     if (len == 0){
       limit = limit - 1 ;
