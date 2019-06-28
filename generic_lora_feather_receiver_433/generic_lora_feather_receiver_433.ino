@@ -1,18 +1,14 @@
+#include <avr/dtostrf.h>
 #include <SPI.h>
 #include <RH_RF95.h>
 
- /*
 #define RFM95_CS 8
 #define RFM95_RST 4
 #define RFM95_INT 3
 #define RF95_FREQ 433.0
- */
+
 
  // for feather32u4 
-#define RFM95_CS 8
-#define RFM95_RST 4
-#define RFM95_INT 7
-#define RF95_FREQ 915.0
 
 // Change to 434.0 or other frequency, must match RX's freq!
 //#define RF95_FREQ 433.0
@@ -75,9 +71,10 @@ void loop()
           digitalWrite(LED, HIGH);
       // RH_RF95::printBuffer("Received: ", buf, len);
           Serial.print("Got: ");
-          for (int i = 0; i<len; i++){
-              Serial.print((char)buf[i]);
-          }
+          Serial.print((char*)buf);
+//          for (int i = 0; i<len; i++){
+//              Serial.print((char)buf[i]);
+//          }
           Serial.println();
           Serial.print("RSSI: ");
           Serial.println(rf95.lastRssi(), DEC);
