@@ -14,124 +14,193 @@ uint32_t Read_ACC_Z = 0x0C0000FB;
 //const unsigned long Enable_ANG = 0xB0001F6F;
 
 
-SPISettings settingSCA(8000000, MSBFIRST, SPI_MODE0);
+SPISettings settingSCA(4000000, MSBFIRST, SPI_MODE0);
 
 
 void setup() {
   Serial.begin(115200);
 
   pinMode(AccSelectPin, OUTPUT);
-  
   // sabi sa website ng feather lora m0 at 3u4
   // disable spi for radio when not in use
   pinMode(8,OUTPUT);
   digitalWrite(8,HIGH);
+
+  
   SPI.begin();
   delay(1000);
+  
   char incomingByte = Serial.read();
   while (incomingByte != 'a') {
     incomingByte = Serial.read();
     delay(100);
   }
-  read_status();
-//  enableANG();
+//  read_status();
+//  reset();
+//  read_status();
+  enableANG();
 }
 
 void read_status(){
   uint32_t READ_STATUS = 0x180000E5;
   uint32_t dummy = 0x00000000;
-
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  SPI.transfer(&READ_STATUS,4); // first response shall be discarded
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(10);
   
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
-  SPI.transfer(&dummy,4); // first response shall be discarded
+  delay(10);
+  SPI.transfer(&READ_STATUS,4);
+  digitalWrite(AccSelectPin, HIGH);
+  Serial.print("1st Status Read ::");
+  Serial.println(READ_STATUS,HEX);
+  SPI.endTransaction();
+  
+  delay(10);
+   
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  READ_STATUS = 0x180000E5;
+  SPI.transfer(&READ_STATUS,4);
+  
+  Serial.print("2nd Status Read ::"); 
+  Serial.println(READ_STATUS,HEX); 
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
-  delay(10);
+}
 
-  Serial.println(dummy,HEX);
+void reset(){
+  
+  uint32_t RESET = 0xB4002098;
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  delay(10);
+  SPI.transfer(&RESET,4);
+  
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  
 }
 
 void who(){
   uint32_t WHOAMI = 0x40000091;
-  uint32_t dummy = 0x00000000;
-
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
-  SPI.transfer(&WHOAMI,4); // first response shall be discarded
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
   delay(10);
-
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  SPI.transfer(&dummy,4); // first response shall be discarded
+  SPI.transfer(0x40);
+  SPI.transfer(0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0x91);
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
   delay(1);
-  Serial.println(dummy,HEX);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  byte a = SPI.transfer(0x00);
+  byte b = SPI.transfer(0x00);
+  byte c = SPI.transfer(0x00);
+  byte d = SPI.transfer(0x00);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  Serial.print(a,HEX);
+  Serial.print(b,HEX);
+  Serial.print(c,HEX);
+  Serial.println(d,HEX);
 }
 
+double readX(){
+  uint32_t Read_ANG_X = (0x240000C7);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  delay(10);
+  SPI.transfer(0x24);
+  SPI.transfer(0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0xC7);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  delay(1);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  byte a = SPI.transfer(0x00);
+  byte b = SPI.transfer(0x00);
+  byte c = SPI.transfer(0x00);
+  byte d = SPI.transfer(0x00);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  int16_t result = (( b << 8) | c );
+  double angle = ((result*1.0) / 16384.0) * 90.0;
+  Serial.print("X:"); Serial.print(angle);
+  return angle;
+}
+double readY(){
+  uint32_t Read_ANG_Y = (0x280000CD);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  delay(10);
+  SPI.transfer(0x28);
+  SPI.transfer(0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0xCD);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  delay(1);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  byte a = SPI.transfer(0x00);
+  byte b = SPI.transfer(0x00);
+  byte c = SPI.transfer(0x00);
+  byte d = SPI.transfer(0x00);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  int16_t result = (( b << 8) | c );
+  double angle = ((result*1.0) / 16384.0) * 90.0;
+  Serial.print("\tY:"); Serial.print(angle);
+  return angle;
+}
+
+double readZ(){
+  uint32_t Read_ANG_Z = (0x280000CB);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  delay(10);
+  SPI.transfer(0x28);
+  SPI.transfer(0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0xCB);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  delay(1);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  byte a = SPI.transfer(0x00);
+  byte b = SPI.transfer(0x00);
+  byte c = SPI.transfer(0x00);
+  byte d = SPI.transfer(0x00);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  int16_t result = (( b << 8) | c );
+  double angle = ((result*1.0) / 16384.0) * 90.0;
+  Serial.print("\tZ:"); Serial.println(angle);
+  return angle;
+}
+  
 void enableANG(){
   uint32_t Enable_ANG = 0xB0001F6F;
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
-  delay(5);
-  SPI.transfer(&Enable_ANG,4);
+  delay(10);
+  SPI.transfer(0xB0);
+  SPI.transfer(0x00);
+  SPI.transfer(0x1F);
+  SPI.transfer(0x6F);
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
+  delay(1);
 }
 
-void read_angX() {
-  uint32_t Read_ANG_X = (0x240000C7);
-  uint32_t Read_ANG_Y = (0x280000CD);
-  uint32_t Read_ANG_Z = (0x280000CB);
-  uint32_t dummy = (0x00000000);
-  
-  
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  SPI.transfer(&Read_ANG_X,sizeof(Read_ANG_X)); // first response shall be discarded
-  digitalWrite(AccSelectPin, HIGH);
-//  SPI.endTransaction();
-  
-  delay(10);
-  
-//  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  SPI.transfer(&Read_ANG_Y,sizeof(Read_ANG_Y)); // first response shall be discarded
-  digitalWrite(AccSelectPin, HIGH);
-//  SPI.endTransaction();
-  
-  delay(10);
-  
-//  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  SPI.transfer(&Read_ANG_Z,sizeof(Read_ANG_Z)); // first response shall be discarded
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-
-//  ; // first response shall be discarded
-//  long X = ((Read_ACC_Y & 0x00111100) >> 8 );
-//  long Y = ((Read_ACC_Z & 0x00111100) >> 8 );
-  
-  Serial.print("X::");
-  Serial.print(Read_ANG_Y,HEX);
-  Serial.print("\tY::");
-  Serial.println(Read_ANG_Z,HEX);
-  
-  delay(10);
-}
 
 void loop(){
-//  read_angX();
-//who();
+readX();
+readY();
+readZ();
 delay(1000);
 }
-
