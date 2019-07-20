@@ -1,18 +1,7 @@
 #include <math.h>
 #include <SPI.h>
+#include <avr/dtostrf.h>
 const int AccSelectPin = A5;
-
-uint32_t Read_ACC_X = 0x040000F7;
-uint32_t Read_ACC_Y = 0x080000FD;
-uint32_t Read_ACC_Z = 0x0C0000FB;
-
-
-//const unsigned long Read_ANG_X = 0x240000C7;
-//const unsigned long Read_ANG_Y = 0x280000CD;
-//const unsigned long Read_ANG_Z = 0x280000CB;
-//const unsigned long Read_TEMP = 0x140000EF;
-//const unsigned long Enable_ANG = 0xB0001F6F;
-
 
 SPISettings settingSCA(4000000, MSBFIRST, SPI_MODE0);
 
@@ -21,6 +10,7 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(AccSelectPin, OUTPUT);
+  pinMode(A0,OUTPUT);
   // sabi sa website ng feather lora m0 at 3u4
   // disable spi for radio when not in use
   pinMode(8,OUTPUT);
@@ -35,49 +25,8 @@ void setup() {
     incomingByte = Serial.read();
     delay(100);
   }
-//  read_status();
-//  reset();
-//  read_status();
-  enableANG();
-}
-
-void read_status(){
-  uint32_t READ_STATUS = 0x180000E5;
-  uint32_t dummy = 0x00000000;
-  
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(10);
-  SPI.transfer(&READ_STATUS,4);
-  digitalWrite(AccSelectPin, HIGH);
-  Serial.print("1st Status Read ::");
-  Serial.println(READ_STATUS,HEX);
-  SPI.endTransaction();
-  
-  delay(10);
-   
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  READ_STATUS = 0x180000E5;
-  SPI.transfer(&READ_STATUS,4);
-  
-  Serial.print("2nd Status Read ::"); 
-  Serial.println(READ_STATUS,HEX); 
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-}
-
-void reset(){
-  
-  uint32_t RESET = 0xB4002098;
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(10);
-  SPI.transfer(&RESET,4);
-  
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  
+//delay(5000);
+  enableANG(); // enable angle outputs
 }
 
 void who(){
@@ -106,8 +55,9 @@ void who(){
   Serial.println(d,HEX);
 }
 
-double readX(){
+float readX(){
   uint32_t Read_ANG_X = (0x240000C7);
+  char tmpString[5];
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
   delay(10);
@@ -127,12 +77,15 @@ double readX(){
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
   int16_t result = (( b << 8) | c );
-  double angle = ((result*1.0) / 16384.0) * 90.0;
-  Serial.print("X:"); Serial.print(angle);
+  float angle = ((result*1.0) / 16384.0) * 90.0;
+  dtostrf(angle,5,4,tmpString);
+//  Serial.print("X:"); 
+  Serial.print(tmpString);
   return angle;
 }
-double readY(){
+float readY(){
   uint32_t Read_ANG_Y = (0x280000CD);
+  char tmpString[5];
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
   delay(10);
@@ -152,13 +105,17 @@ double readY(){
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
   int16_t result = (( b << 8) | c );
-  double angle = ((result*1.0) / 16384.0) * 90.0;
-  Serial.print("\tY:"); Serial.print(angle);
+  float angle = ((result*1.0) / 16384.0) * 90.0;
+  dtostrf(angle,5,4,tmpString);
+  Serial.print("\tY:"); 
+  Serial.print(",");
+  Serial.print(tmpString);
   return angle;
 }
 
-double readZ(){
+float readZ(){
   uint32_t Read_ANG_Z = (0x280000CB);
+  char tmpString[5];
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
   delay(10);
@@ -178,8 +135,11 @@ double readZ(){
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
   int16_t result = (( b << 8) | c );
-  double angle = ((result*1.0) / 16384.0) * 90.0;
-  Serial.print("\tZ:"); Serial.println(angle);
+  float angle = ((result*1.0) / 16384.0) * 90.0;
+  dtostrf(angle,5,4,tmpString);
+//  Serial.print("\tZ:"); 
+  Serial.print(",");
+  Serial.println(tmpString);
   return angle;
 }
   
@@ -203,4 +163,5 @@ readX();
 readY();
 readZ();
 delay(1000);
+//digitalWrite(A0,HIGH);
 }
