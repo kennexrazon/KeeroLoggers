@@ -4,16 +4,20 @@
 
 #include <Wire.h>
 
-#include <SD.h>
+// #include <SD.h>
+#include "SdFat.h"
+SdFat SD;
 #define cardSelect 4
-File logfile;
+
+// File logfile;
 
 const int AccSelectPin = A5;
 SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
+  delay(5000);
 
   // 
   // char incomingByte = Serial.read();
@@ -29,25 +33,28 @@ void setup() {
   // digitalWrite(8,HIGH);
   // cs for sd card
 
-  Serial.println("Starting");
+  // Serial.println("Starting");
+  // pinMode(cardSelect,OUTPUT);
   if (!SD.begin(cardSelect)) {
     Serial.println("Card init. failed!");
   }
-  char filename[15];
-  strcpy(filename, "/ANALOG00.TXT");
-  for (uint8_t i = 0; i < 100; i++) {
-    filename[7] = '0' + i/10;
-    filename[8] = '0' + i%10;
-    // create if does not exist, do not open existing, write, sync after write
-    if (! SD.exists(filename)) {
-      break;
-    }
-  }
+  // char filename[15];
+  // strcpy(filename, "datalog00.txt");
+  // for (uint8_t i = 0; i < 100; i++) {
+  //   filename[7] = '0' + i/10;
+  //   filename[8] = '0' + i%10;
+  //   // create if does not exist, do not open existing, write, sync after write
+  //   if (! SD.exists(filename)) {
+  //     break;
+  //   }
+  // }
 
-  delay(1000);
-  pinMode(AccSelectPin, OUTPUT);
+  delay(2000);
+
+
   // pinMode(13,OUTPUT);
   SPI.begin();
+  pinMode(AccSelectPin, OUTPUT);
   set_mode4();
   enableANG(); // enable angle outputs
 }
@@ -315,7 +322,7 @@ void read_accz(char* tmpString){
 }
 
 struct scl_data scl_ave_axl(){
-  int samples = 2;
+  int samples = 50;
   char XtmpString[6];
   char YtmpString[6];
   char ZtmpString[6];
@@ -323,6 +330,7 @@ struct scl_data scl_ave_axl(){
   double Y = 0.0;
   double Z = 0.0;
   struct scl_data sc;
+  // digitalWrite(13,HIGH);
   for(int i = samples; i>0; i-- ){
     readX(XtmpString);
     readY(YtmpString);
@@ -332,6 +340,7 @@ struct scl_data scl_ave_axl(){
     Z = Z + atof(ZtmpString); 
     delay(100); // scl3300 10hz at mode 4 inclination mode
   }
+  // digitalWrite(13,LOW);
   sc.ang_x = X / (samples*1.0);
   sc.ang_y = Y / (samples*1.0);
   sc.ang_z = Z / (samples*1.0);
@@ -344,50 +353,38 @@ void loop(){
   char ZtmpString[6];
 
   char temp[6];
-
-  
-
   struct scl_data sc = scl_ave_axl();
-
-
   File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
   if (dataFile) {
-  // digitalWrite(13,HIGH);
-  dtostrf(sc.ang_x,6,5,XtmpString);
-  Serial.print(XtmpString); 
-  Serial.print(",");
-  dtostrf(sc.ang_y,6,5,YtmpString);
-  Serial.print(YtmpString); 
-  Serial.print(",");
-  dtostrf(sc.ang_z,6,5,ZtmpString);
-  Serial.print(ZtmpString);
 
-  scl_temp(temp);
-  Serial.print(",");
-  Serial.println(temp);
-
+    
+    dtostrf(sc.ang_x,6,5,XtmpString);
     dataFile.print(XtmpString);
     dataFile.print(",");
+    dtostrf(sc.ang_y,6,5,YtmpString);
     dataFile.print(YtmpString);
     dataFile.print(",");
+    dtostrf(sc.ang_z,6,5,ZtmpString);
     dataFile.print(ZtmpString);
-    dataFile.print(",");
+    dataFile.print(",");    
+    scl_temp(temp);
     dataFile.println(temp);
-    
+    dataFile.flush();    
+
     dataFile.close();
     // digitalWrite(13,LOW); 
     // print to the serial port too:
+  } else {
+    Serial.println(".");  
   }
-
+  
   // readX(XtmpString);
   // readY(YtmpString);
   // readZ(ZtmpString);
   // read_accx(XtmpString);
   // read_accy(YtmpString);
   // read_accz(ZtmpString);
-
-
-
 
 
 }
