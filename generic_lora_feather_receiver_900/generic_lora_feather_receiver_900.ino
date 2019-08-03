@@ -22,22 +22,22 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
  
 // Blinky on receipt
 #define LED 13
-#define RED A0
-#define GREEN A1
-#define ORANGE A2
-#define YELLOW A3
-#define WHITE A4
+//#define RED A0
+//#define GREEN A1
+//#define ORANGE A2
+//#define YELLOW A3
+//#define WHITE A4
 
 int rssi = 0;
 void setup()
 {
   pinMode(LED, OUTPUT);
   pinMode(RFM95_RST, OUTPUT);
-  pinMode(RED,OUTPUT);
-  pinMode(GREEN,OUTPUT);
-  pinMode(ORANGE,OUTPUT);
-  pinMode(YELLOW,OUTPUT);
-  pinMode(WHITE,OUTPUT);  
+//  pinMode(RED,OUTPUT);
+//  pinMode(GREEN,OUTPUT);
+//  pinMode(ORANGE,OUTPUT);
+//  pinMode(YELLOW,OUTPUT);
+//  pinMode(WHITE,OUTPUT);  
   digitalWrite(RFM95_RST, HIGH);
  pinMode(10,OUTPUT);
   Serial.begin(115200);
@@ -77,8 +77,8 @@ void loop()
      
         if (rf95.recv(buf, &len))        {
 //          digitalWrite(LED, HIGH);
-      // RH_RF95::printBuffer("Received: ", buf, len);
-//          Serial.print("Got: ");
+       RH_RF95::printBuffer("Received: ", buf, len);
+          Serial.print("Got: ");
 //          blinkRed();
           for (int i = 0; i<len; i++){
               Serial.print((char)buf[i]);
@@ -87,7 +87,7 @@ void loop()
           Serial.print("RSSI: ");
           Serial.println(rf95.lastRssi(), DEC);
           rssi = rf95.lastRssi();
-          RSSI_BLINK(rssi);        
+//          RSSI_BLINK(rssi);        
           if ( strcmp((char*)buf,"ACK") ){      
               uint8_t data[] = "ACK";
               rf95.send(data, sizeof(data));
@@ -100,7 +100,7 @@ void loop()
         }
     }
 }
-
+/*
 void RSSI_BLINK(int rssi){
 
   if ( rssi < -97  ){
@@ -145,5 +145,5 @@ void RSSI_BLINK(int rssi){
     digitalWrite(WHITE,LOW);         
   }
 }
-
+*/
 

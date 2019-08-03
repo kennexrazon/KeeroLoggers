@@ -39,11 +39,9 @@ int AXLadr = 0x28;
 int16_t packetnum = 0;  // packet counter, we increment per xmission
 
 void setup(void){
-  Serial.begin(9600);
+  Serial.begin(115200);
   delay(2000);
-  Serial.print(AREA);Serial.print("-");
-  Serial.print(SITE); Serial.print("-");
-  Serial.println(SENSEID);
+
       
   if(!bno.begin())
   {
@@ -54,46 +52,11 @@ void setup(void){
 
   pinMode(somsPin,INPUT);
   
-  /*
-  int8_t temp = bno.getTemp();
-  Serial.print("Current Temperature: ");
-  Serial.print(temp);
-  Serial.println(" C");
-  Serial.println("");
-  */
-
   bno.setExtCrystalUse(true); 
-  //Start rx
-//  pinMode(RFM95_RST, OUTPUT);
-//  digitalWrite(RFM95_RST, HIGH);
-
   delay(100);
 
   Serial.println("Feather LoRa TX Test!");
 
-  // manual reset
-//  digitalWrite(RFM95_RST, LOW);
-//  delay(10);
-//  digitalWrite(RFM95_RST, HIGH);
-//  delay(10);
-//
-//  while (!rf95.init()) {
-//    Serial.println("LoRa radio init failed");
-//    while (1);
-//  }
-//  Serial.println("LoRa radio init OK!");
-//
-//  // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
-//  if (!rf95.setFrequency(RF95_FREQ)) {
-//    Serial.println("setFrequency failed");
-//  }
-//  Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
-//  
-//  rf95.setTxPower(23, false);
-//
-//  Serial.println("done initializing......\n");
-//  randomSeed(analogRead(1));
-//  delay(random(3000,4000));
   blinkled();
   Serial.println("done setup");
 }
@@ -118,31 +81,17 @@ struct lgr_data{
 
 void loop(void)
 {
-  Serial.println("begin loop");
-
   struct imu_data imu = get_data_imu();
-  struct lgr_data lgr = get_data_lgr();
-  
-  char line1[50] = AREA;//axl gravity
-  char line2[50] = AREA;//axl mag
-  char line3[44] = AREA;//ina power + soms
-
-  //build/parse the line packets
-
-  buildLineAXL(line1,imu);
-  buildLineMGR(line2,imu);
-  buildLineSMS(line3,lgr);
-
-  //transmit data
-//  sendLine(line1,50,1);
-//  sendLine(line2,50,2);
-//  sendLine(line3,50,3);
-  
-  Serial.println("#################################");
-  pinMode(A0,OUTPUT);
-  delay(1000);
-  digitalWrite(A0,HIGH);
-  delay(1000);
+  char tmpStringX[5];
+  char tmpStringY[5];
+  char tmpStringZ[5];
+  dtostrf(imu.axl_x,5,4,tmpStringX);
+  dtostrf(imu.axl_y,5,4,tmpStringY);
+  dtostrf(imu.axl_z,5,4,tmpStringZ);
+  Serial.print(tmpStringX);Serial.print(",");
+  Serial.print(tmpStringY);Serial.print(",");
+  Serial.println(tmpStringZ);
+//  delay(1000);
 }
 
 struct imu_data get_data_imu(){

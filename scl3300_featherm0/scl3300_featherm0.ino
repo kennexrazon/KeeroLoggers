@@ -106,8 +106,9 @@ float readY(){
   SPI.endTransaction();
   int16_t result = (( b << 8) | c );
   float angle = ((result*1.0) / 16384.0) * 90.0;
+//  Serial.println(angle);
   dtostrf(angle,5,4,tmpString);
-  Serial.print("\tY:"); 
+//  Serial.print("\tY:"); 
   Serial.print(",");
   Serial.print(tmpString);
   return angle;
@@ -157,11 +158,106 @@ void enableANG(){
   delay(1);
 }
 
+float read_accx(){
+  uint32_t Read_ACC_X = (0x040000F7);
+  char tmpString[5];
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  delay(10);
+  SPI.transfer(0x04);
+  SPI.transfer(0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0xF7);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  delay(1);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  byte a = SPI.transfer(0x00);
+  byte b = SPI.transfer(0x00);
+  byte c = SPI.transfer(0x00);
+  byte d = SPI.transfer(0x00);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  int16_t result = (( b << 8) | c );
+//  Serial.print(result);
+  float acc = (result*1.0/6000.0);
+  dtostrf(acc,5,4,tmpString);
+  Serial.print(tmpString);
+  return acc;
+}
+
+float read_accy(){
+  uint32_t Read_ACC_Y = (0x080000FD);
+  char tmpString[5];
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  delay(10);
+  SPI.transfer(0x08);
+  SPI.transfer(0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0xFD);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  delay(1);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  byte a = SPI.transfer(0x00);
+  byte b = SPI.transfer(0x00);
+  byte c = SPI.transfer(0x00);
+  byte d = SPI.transfer(0x00);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  int16_t result = (( b << 8) | c );
+  float acc = (result*1.0/6000.0);
+  dtostrf(acc,5,4,tmpString);
+ 
+  Serial.print(",");
+  Serial.print(tmpString);
+//Serial.print(result);
+  return acc;
+}
+
+float read_accz(){
+  uint32_t Read_ACC_Y = (0x0C0000FB);
+  char tmpString[5];
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  delay(10);
+  SPI.transfer(0x0C);
+  SPI.transfer(0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0xFB);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  delay(1);
+  SPI.beginTransaction(settingSCA);
+  digitalWrite(AccSelectPin, LOW);
+  byte a = SPI.transfer(0x00);
+  byte b = SPI.transfer(0x00);
+  byte c = SPI.transfer(0x00);
+  byte d = SPI.transfer(0x00);
+  digitalWrite(AccSelectPin, HIGH);
+  SPI.endTransaction();
+  int16_t result = (( b << 8) | c );
+  float acc = (result*1.0/6000.0);
+//  float acc = ((result*1.0) / 16384.0) * 90.0;
+  dtostrf(acc,5,4,tmpString);
+//  Serial.print("\tZ:"); 
+  Serial.print(",");
+  Serial.println(tmpString);
+//Serial.println(result);
+  return acc;
+}
+
 
 void loop(){
-readX();
-readY();
-readZ();
-delay(1000);
+//readX();
+//readY();
+//readZ();
+//delay(1000);
 //digitalWrite(A0,HIGH);
+read_accx();
+read_accy();
+read_accz();
 }
