@@ -394,7 +394,7 @@ void read_accz(char* tmpString){
 }
 
 struct scl_data scl_ave_axl(){
-  int samples = 50;
+  int samples = 10;
   double X = 0.0;
   double Y = 0.0;
   double Z = 0.0;
@@ -418,9 +418,6 @@ struct scl_data scl_ave_axl(){
 }
 
 struct scl_data scl_temp_comp(struct scl_data sc){
-  double xcal = 0.0;
-  double ycal = 0.0;
-  double zcal = 0.0;
 
   double x3 = 4.26808;
   double x2 = -0.39185;
@@ -446,7 +443,7 @@ struct scl_data scl_temp_comp(struct scl_data sc){
   sc.ang_z =  sc.ang_z - (( z3 + (z2*sc.temp) + (z1*square(sc.temp)) 
   + z0*pow(sc.temp,3)));
 
-  return sc;
+  // return sc;
 
 }
 
@@ -457,23 +454,34 @@ void loop(){
   char TempString[6];
 
   // char temp[6];
-  struct scl_data sc = scl_ave_axl();
-  sc = scl_temp_comp(sc);
+  struct scl_data scc = scl_ave_axl();
+  // struct scl_data scc;
+  // scl_temp_comp(scc);
   File dataFile = SD.open("datalog.txt", FILE_WRITE);
 
   if (dataFile) {
 
     
-    dtostrf(sc.ang_x,6,5,XtmpString);
+    // dtostrf(sc.ang_x,6,5,XtmpString);
+    // dataFile.print(XtmpString);
+    // dataFile.print(",");
+    // dtostrf(sc.ang_y,6,5,YtmpString);
+    // dataFile.print(YtmpString);
+    // dataFile.print(",");
+    // dtostrf(sc.ang_z,6,5,ZtmpString);
+    // dataFile.print(ZtmpString);
+    // dataFile.print(",");    
+    dtostrf(scc.ang_x,6,5,XtmpString);
     dataFile.print(XtmpString);
     dataFile.print(",");
-    dtostrf(sc.ang_y,6,5,YtmpString);
+    dtostrf(scc.ang_y,6,5,YtmpString);
     dataFile.print(YtmpString);
     dataFile.print(",");
-    dtostrf(sc.ang_z,6,5,ZtmpString);
+    dtostrf(scc.ang_z,6,5,ZtmpString);
     dataFile.print(ZtmpString);
-    dataFile.print(",");    
-    dtostrf(sc.temp,6,5,TempString);
+    dataFile.print(",");
+    dtostrf(scc.temp,6,5,TempString);
+    Serial.println(TempString);
     dataFile.println(TempString);
     dataFile.flush();    
 
