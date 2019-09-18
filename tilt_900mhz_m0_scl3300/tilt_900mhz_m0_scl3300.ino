@@ -12,14 +12,14 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 3
 #define RF95_FREQ 868.0
 
-#define SENSEID "19"
+#define SENSEID "27"
 #define AREA "LEY"
 // MSL - 19 - 21 
 // SMR - 22 - 24
 // MUR - 25 - 27
 // MGA - 28 - 29
 // RDO - 30 - 32
-#define SITE "MSL"
+#define SITE "MUR"
 #define terminator "$"
 
 #define VBATPIN A7
@@ -82,35 +82,27 @@ void setup() {
 
 void loop(){
 
-  // char temp[6];
-  // scl_xyz();
-
-
-  // double temp = 0.0;
-  // temp = getTemp();
   struct scl_data sc = scl_ave_axl();
   struct lgr_data lgr = get_data_lgr();
   // sc = scl_temp_comp(sc);
 
   char line1[50] = AREA;//axl gravity
-  // char line2[50] = AREA;//axl mag
-  char line3[50] = AREA;//ina power + soms
+  char line3[57] = AREA;//ina power + soms
 
   //build/parse the line packets
 
   buildLineAXL(line1,sc);
-  // buildLineMGR(line2,sc);
   buildLineSMS(line3,lgr);
 
   //transmit data
   sendLine(line1,50,1);
   // sendLine(line2,50,2);
-  sendLine(line3,50,3);
+  sendLine(line3,57,3);
   
   Serial.println("#################################");
   pinMode(A0,OUTPUT);
-  digitalWrite(A0,LOW);
-  delay(1000);
+  // digitalWrite(A0,LOW);
+  // delay(1000);
   digitalWrite(A0,HIGH);
   delay(1000);
 }
@@ -375,7 +367,7 @@ void enableANG(){
   delay(1);
 }
 */
-float get_accx(){
+double get_accx(){
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
   delay(10);
@@ -394,12 +386,12 @@ float get_accx(){
   byte d = SPI.transfer(0x00);
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
-  int result = (( b << 8) | c );
-  float acc = (result*1.0/6000.0);
+  int16_t result = (( b << 8) | c );
+  double acc = ((result*1.0)/6000.0);
   return acc;
 }
 
-float get_accy(){
+double get_accy(){
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
   delay(10);
@@ -418,12 +410,12 @@ float get_accy(){
   byte d = SPI.transfer(0x00);
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
-  int result = (( b << 8) | c );
-  float acc = (result*1.0/6000.0);
+  int16_t result = (( b << 8) | c );
+  double acc = (result*1.0)/6000.0;
   return acc;
 }
 
-float get_accz(){
+double get_accz(){
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
   delay(10);
@@ -442,29 +434,33 @@ float get_accz(){
   byte d = SPI.transfer(0x00);
   digitalWrite(AccSelectPin, HIGH);
   SPI.endTransaction();
-  int result = (( b << 8) | c );
-  float acc = (result*1.0/6000.0);
+  int16_t result = (( b << 8) | c );
+  double acc = (result*1.0)/6000.0;
   return acc;
 }
 
 struct scl_data scl_ave_axl(){
-  int samples = 10;
+  int samples = 1;
   double X = 0.0;
   double Y = 0.0;
   double Z = 0.0;
   // double temp = 0.0;
   
   struct scl_data sc;
-  for(int i = samples; i>0; i-- ){
-    X = X + get_accx();
-    Y = Y + get_accy();
-    Z = Z + get_accz(); 
-    delay(100); // scl3300 10hz at mode 4 inclination mode
-  }
-  sc.ang_x = X / (samples*1.0);
-  sc.ang_y = Y / (samples*1.0);
-  sc.ang_z = Z / (samples*1.0);
-  // sc.temp = getTemp();
+  // for(int i = samples; i>0; i-- ){
+  //   X = X + get_accx();
+  //   Y = Y + get_accy();
+  //   Z = Z + get_accz(); 
+  //   delay(100); // scl3300 10hz at mode 4 inclination mode
+  // }
+  // sc.ang_x = X / (samples*1.0);
+  // sc.ang_y = Y / (samples*1.0);
+  // sc.ang_z = Z / (samples*1.0);
+  // // sc.temp = getTemp();
+
+  sc.ang_x = get_accx();
+  sc.ang_y = get_accy();
+  sc.ang_z = get_accz();
   // Serial.println(sc.ang_x);
   // Serial.println(sc.ang_y);
   // Serial.println(sc.ang_z);
