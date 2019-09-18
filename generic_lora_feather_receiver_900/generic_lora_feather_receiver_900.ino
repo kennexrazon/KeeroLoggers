@@ -1,52 +1,44 @@
+// Feather9x_TX
+// -*- mode: C++ -*-
+// Example sketch showing how to create a simple messaging client (transmitter)
+// with the RH_RF95 class. RH_RF95 class does not provide for addressing or
+// reliability, so you should only use RH_RF95 if you do not need the higher
+// level messaging abilities.
+// It is designed to work with the other example Feather9x_RX
+ 
 #include <SPI.h>
 #include <RH_RF95.h>
-
- /*
-#define RFM95_CS 8
-#define RFM95_RST 4
-#define RFM95_INT 3
-#define RF95_FREQ 433.0
- */
-
- // for feather32u4 
+ 
+/* for feather32u4 
 #define RFM95_CS 8
 #define RFM95_RST 4
 #define RFM95_INT 7
-#define RF95_FREQ 915.0
+*/
+ 
+// for feather m0  
+#define RFM95_CS 8
+#define RFM95_RST 4
+#define RFM95_INT 3
 
 // Change to 434.0 or other frequency, must match RX's freq!
-//#define RF95_FREQ 433.0
+#define RF95_FREQ 868.0
  
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
  
-// Blinky on receipt
-#define LED 13
-//#define RED A0
-//#define GREEN A1
-//#define ORANGE A2
-//#define YELLOW A3
-//#define WHITE A4
-
-int rssi = 0;
-void setup()
+void setup() 
 {
-  pinMode(LED, OUTPUT);
   pinMode(RFM95_RST, OUTPUT);
-//  pinMode(RED,OUTPUT);
-//  pinMode(GREEN,OUTPUT);
-//  pinMode(ORANGE,OUTPUT);
-//  pinMode(YELLOW,OUTPUT);
-//  pinMode(WHITE,OUTPUT);  
   digitalWrite(RFM95_RST, HIGH);
- pinMode(10,OUTPUT);
+ 
   Serial.begin(115200);
-//  while (!Serial) {
-//    delay(1);
-//  }
+  while (!Serial) {
+    delay(1);
+  }
+ 
   delay(100);
  
-  Serial.println("Feather LoRa RX Test!");
+  Serial.println("Feather LoRa TX Test!");
  
   // manual reset
   digitalWrite(RFM95_RST, LOW);
@@ -56,94 +48,60 @@ void setup()
  
   while (!rf95.init()) {
     Serial.println("LoRa radio init failed");
+    Serial.println("Uncomment '#define SERIAL_DEBUG' in RH_RF95.cpp for detailed debug info");
     while (1);
   }
   Serial.println("LoRa radio init OK!");
+ 
   // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM
   if (!rf95.setFrequency(RF95_FREQ)) {
     Serial.println("setFrequency failed");
     while (1);
   }
   Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
+  
   rf95.setTxPower(23, false);
 }
  
+int16_t packetnum = 0;  // packet counter, we increment per xmission
+ 
 void loop()
 {
-    if (rf95.available()) {
-        // Should be a message for us now
-        uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-        uint8_t len = sizeof(buf);
-     
-        if (rf95.recv(buf, &len))        {
-//          digitalWrite(LED, HIGH);
-       RH_RF95::printBuffer("Received: ", buf, len);
-          Serial.print("Got: ");
-//          blinkRed();
-          for (int i = 0; i<len; i++){
-              Serial.print((char)buf[i]);
-          } 
-          Serial.println();
-          Serial.print("RSSI: ");
-          Serial.println(rf95.lastRssi(), DEC);
-          rssi = rf95.lastRssi();
-//          RSSI_BLINK(rssi);        
-          if ( strcmp((char*)buf,"ACK") ){      
-              uint8_t data[] = "ACK";
-              rf95.send(data, sizeof(data));
-              rf95.waitPacketSent();
-              Serial.println("Sent a reply");
-          }
-            digitalWrite(LED, LOW);
-        } else {
-          Serial.println("Receive failed");
-        }
+  delay(100); // Wait 1 second between transmits, could also 'sleep' here!
+  // Serial.println("Transmitting..."); // Send a message to rf95_server
+  
+  
+ // Now wait for a reply
+  uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+  uint8_t len = sizeof(buf);
+ 
+  // Serial.println("Waiting for reply...");
+  if (rf95.waitAvailableTimeout(1000))
+  { 
+    // Should be a reply message for us now   
+    if (rf95.recv(buf, &len))
+   {
+
+      Serial.print("Got: ");
+      Serial.println((char*)buf);
+      Serial.print("RSSI: ");
+      Serial.println(rf95.lastRssi(), DEC);    
+
+      char radiopacket[4] = "ACK";
+      rf95.send((uint8_t *)radiopacket, 4);
+      delay(10);
+      rf95.waitPacketSent();    
+
     }
-}
-/*
-void RSSI_BLINK(int rssi){
-
-  if ( rssi < -97  ){
-    digitalWrite(ORANGE,LOW);
-    digitalWrite(GREEN,LOW);
-    digitalWrite(YELLOW,LOW);
-    digitalWrite(WHITE,LOW);    
-    digitalWrite(RED,HIGH);
-    delay(250);
-    digitalWrite(RED,LOW);  
-  } else if ( rssi <= -95 && rssi < -93 ){
-    digitalWrite(ORANGE,LOW);
-    digitalWrite(RED,LOW);
-    digitalWrite(YELLOW,LOW);
-    digitalWrite(WHITE,LOW);
-    digitalWrite(GREEN,HIGH);
-    delay(250);
-    digitalWrite(GREEN,LOW);
-  } else if ( rssi <= -93 && rssi < -90 ){
-    digitalWrite(GREEN,LOW);
-    digitalWrite(RED,LOW);
-    digitalWrite(YELLOW,LOW);
-    digitalWrite(WHITE,LOW);
-    digitalWrite(ORANGE,HIGH);
-    delay(250);
-    digitalWrite(ORANGE,LOW);
-  } else if ( rssi <= -90 && rssi < - 86 ){
-    digitalWrite(GREEN,LOW);
-    digitalWrite(RED,LOW);
-    digitalWrite(ORANGE,LOW);
-    digitalWrite(WHITE,LOW);
-    digitalWrite(YELLOW,HIGH);
-    delay(250);
-    digitalWrite(YELLOW,LOW);
-  } else if ( rssi >= -86 ){
-    digitalWrite(GREEN,LOW);
-    digitalWrite(RED,LOW);
-    digitalWrite(ORANGE,LOW);
-    digitalWrite(YELLOW,LOW);
-    digitalWrite(WHITE,HIGH);
-    delay(250);
-    digitalWrite(WHITE,LOW);         
+    else
+    {
+      Serial.println("Receive failed");
+    }
   }
+  else
+  {
+    delay(100);
+    // Serial.println("No reply, is there a listener around?");
+  }
+ 
 }
-*/
-
