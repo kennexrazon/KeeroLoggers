@@ -468,17 +468,22 @@ struct scl_data scl_ave_axl(){
 }
 
 float get_soms_VWC(int pin) {
-  float somsADC = 0.0;
-  float soms_avg_vwc = 0.0;
-  float somsVWC = 0.0;
-  
-  somsADC = (analogRead(pin) / 1023.0)*3.30;
+ float somsADC = 0.0;
+ float soms_avg_vwc = 0.0;
+ float somsVWC = 0.0;
+ int samples = 10;
+ 
+ somsADC = (analogRead(pin) / 1023.0)*3.30;
 
-  somsVWC = (2.97*somsADC*somsADC*somsADC) - 
-  (7.37*somsADC*somsADC) + (6.69*somsADC) - 1.92;  
+ somsVWC = (2.97*somsADC*somsADC*somsADC) -
+ (7.37*somsADC*somsADC) + (6.69*somsADC) - 1.92;  
 
+ for(int i = 0; i<10; i++){
+   soms_avg_vwc = soms_avg_vwc + somsVWC;
+ }
 
-  return somsADC;
+ return (soms_avg_vwc/10.0);
+
 }
 
 struct lgr_data get_data_lgr(){
