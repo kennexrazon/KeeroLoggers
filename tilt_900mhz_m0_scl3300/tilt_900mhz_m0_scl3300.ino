@@ -12,14 +12,14 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 3
 #define RF95_FREQ 868.0
 
-#define SENSEID "27"
+#define SENSEID "29"
 #define AREA "LEY"
 // MSL - 19 - 21 
 // SMR - 22 - 24
 // MUR - 25 - 27
 // MGA - 28 - 29
 // RDO - 30 - 32
-#define SITE "MUR"
+#define SITE "MGA"
 #define terminator "$"
 
 #define VBATPIN A7
