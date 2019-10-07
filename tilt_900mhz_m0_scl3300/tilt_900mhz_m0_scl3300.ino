@@ -12,14 +12,21 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 3
 #define RF95_FREQ 868.0
 
-#define SENSEID "29"
-#define AREA "LEY"
+#define SENSEID "36"
+#define AREA "NGR"
 // MSL - 19 - 21 
 // SMR - 22 - 24
 // MUR - 25 - 27
 // MGA - 28 - 29
 // RDO - 30 - 32
-#define SITE "MGA"
+// NIGBU - NGR
+// NJT - 33 - 35
+// MLY - 36 - 38
+// NTE - 39 - 41
+// SGD - 42 - 44
+//
+//
+#define SITE "MLY"
 #define terminator "$"
 
 #define VBATPIN A7
@@ -533,13 +540,23 @@ void buildID(char* line,char* sensor){
   strcat(line,terminator);
 }
 
+bool ack(char* reply){
+  char* pch;
+  pch = strstr(reply,"ACK");
+  if (pch != NULL){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void sendLine(char* line,int inLen,int blinks){
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
   uint8_t  len = sizeof(buf);
   int retry = 0;
   do{
     randomSeed(analogRead(1));
-    int del = random(1000,2000);
+    int del = random(1500,2000);
     Serial.print("..........................................");
     Serial.println(del);
     for(int i=0;i<blinks;i++)blinkled();
@@ -560,7 +577,7 @@ void sendLine(char* line,int inLen,int blinks){
       // Should be a reply message for us now   
       if (rf95.recv(buf, &len))
      {
-        Serial.print("Got reply: ");
+        Serial.print(">>: ");
         Serial.println((char*)buf);
         Serial.print("RSSI: ");
         Serial.println(rf95.lastRssi(), DEC);    
@@ -578,8 +595,10 @@ void sendLine(char* line,int inLen,int blinks){
       Serial.println(retry);
       
     }
-  }while(strcmp((char*)buf,"ACK") && (retry < SEND_RETRY_LIMIT));
+  // }while(strcmp((char*)buf,"ACK") && (retry < SEND_RETRY_LIMIT));
+  }while(!ack((char*)buf) && (retry < SEND_RETRY_LIMIT));
 }
+
 
 void buildLineAXL(char* line, struct scl_data dt){
   char sensorType[4] = "AXL";
