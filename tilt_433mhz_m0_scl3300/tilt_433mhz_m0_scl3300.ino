@@ -1,30 +1,52 @@
 #include <math.h>
 #include <SPI.h>
-#include <avr/dtostrf.h>
 #include <RH_RF95.h>
 #include <Wire.h>
+// for m0
+#include <avr/dtostrf.h>
+
+
+/* for 32u4
+#define VBATPIN A9
+#define RFM95_INT 7
+*/
+
 
 const int AccSelectPin = A5;
 SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 
+// for m0
 #define RFM95_CS 8
 #define RFM95_RST 4
 #define RFM95_INT 3
+
+
 #define RF95_FREQ 433.0
 
-#define SENSEID "32"
-#define AREA "LEY"
+
+#define SENSEID "45"
+#define AREA "APO"
 // MSL - 19 - 21 
 // SMR - 22 - 24
 // MUR - 25 - 27
 // MGA - 28 - 29
-// RDO - 30 - 32 433
-#define SITE "RDO"
+// RDO - 30 - 32
+// NIGBU - NGR 868mhz
+// NJT - 33 - 35 
+// MLY - 36 - 38
+// NTE - 39 - 41
+// SGD - 42 - 44
+// APO - APO 433mhz
+// PCO - 45 - 47
+// LTC - 48 - 51
+#define SITE "PCO"
 #define terminator "$"
 
 #define VBATPIN A7
 #define somsPin A3
 #define SEND_RETRY_LIMIT 3
+
+
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
@@ -77,7 +99,6 @@ void setup() {
   delay(random(3000,4000));
   blinkled();
   Serial.println("done setup");
-
 }
 
 void loop(){
@@ -106,7 +127,6 @@ void loop(){
   digitalWrite(A0,HIGH);
   delay(1000);
 }
-
 
 void who(){
   uint32_t WHOAMI = 0x40000091;
@@ -182,191 +202,7 @@ void scl_temp(char* tmpString){
   float temp = -273.0 + ((result*1.0)/18.9);
   dtostrf(temp,6,5,tmpString);
 }
-/*
-void set_mode4(){
-  uint32_t mode4 = 0xB4000338;
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(10);
-  SPI.transfer(0xB4);
-  SPI.transfer(0x00);
-  SPI.transfer(0x03);
-  SPI.transfer(0x38);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-}
 
-double getAngX(){
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(1);
-  SPI.transfer(0x24);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0xC7);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  byte a = SPI.transfer(0x00);
-  byte b = SPI.transfer(0x00);
-  byte c = SPI.transfer(0x00);
-  byte d = SPI.transfer(0x00);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  int result = (( b << 8) | c ); 
-  double angle = ((result*1.0) / 16384.0) * 90.0; 
-  // Serial.println(angle); 
-  return angle;
-}
-
-void readX(char* tmpString){
-  //  uint32_t Read_ANG_X = (0x240000C7);
-  //  char tmpString[7];
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(1);
-  SPI.transfer(0x24);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0xC7);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  byte a = SPI.transfer(0x00);
-  byte b = SPI.transfer(0x00);
-  byte c = SPI.transfer(0x00);
-  byte d = SPI.transfer(0x00);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  int result = (( b << 8) | c ); 
-  float angle = ((result*1.0) / 16384.0) * 90.0;
-  dtostrf(angle,6,5,tmpString);
-  Serial.print(tmpString);
-}
-
-double getAngY(){
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(1);
-  SPI.transfer(0x28);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0xCD);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  byte a = SPI.transfer(0x00);
-  byte b = SPI.transfer(0x00);
-  byte c = SPI.transfer(0x00);
-  byte d = SPI.transfer(0x00);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  int result = (( b << 8) | c );
-  double angle = ((result*1.0) / 16384.0) * 90.0;
-  return angle;
-}
-
-void readY(char* tmpString){
-  //  uint32_t Read_ANG_Y = (0x280000CD);
-  //  char tmpString[7];
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(1);
-  SPI.transfer(0x28);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0xCD);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  byte a = SPI.transfer(0x00);
-  byte b = SPI.transfer(0x00);
-  byte c = SPI.transfer(0x00);
-  byte d = SPI.transfer(0x00);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  int result = (( b << 8) | c );
-  float angle = ((result*1.0) / 16384.0) * 90.0;
-  dtostrf(angle,6,5,tmpString);
-  Serial.print(",");
-  Serial.print(tmpString);
-}
-
-double getAngZ(){
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(1);
-  SPI.transfer(0x2C);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0xCB);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  byte a = SPI.transfer(0x00);
-  byte b = SPI.transfer(0x00);
-  byte c = SPI.transfer(0x00);
-  byte d = SPI.transfer(0x00);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  int result = (( b << 8) | c );
-  double angle = ((result*1.0) / 16384.0) * 90.0;
-  return angle;
-}
-
-void readZ(char* tmpString){
-  //  uint32_t Read_ANG_Z = (0x2C0000CB);
-  //  char tmpString[7];
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(1);
-  SPI.transfer(0x2C);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0xCB);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  byte a = SPI.transfer(0x00);
-  byte b = SPI.transfer(0x00);
-  byte c = SPI.transfer(0x00);
-  byte d = SPI.transfer(0x00);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  int result = (( b << 8) | c );
-  float angle = ((result*1.0) / 16384.0) * 90.0;
-  dtostrf(angle,6,5,tmpString);
-  Serial.print(",");
-  Serial.println(tmpString);
-}
-  
-void enableANG(){
-  uint32_t Enable_ANG = 0xB0001F6F;
-  SPI.beginTransaction(settingSCA);
-  digitalWrite(AccSelectPin, LOW);
-  delay(10);
-  SPI.transfer(0xB0);
-  SPI.transfer(0x00);
-  SPI.transfer(0x1F);
-  SPI.transfer(0x6F);
-  digitalWrite(AccSelectPin, HIGH);
-  SPI.endTransaction();
-  delay(1);
-}
-*/
 double get_accx(){
   SPI.beginTransaction(settingSCA);
   digitalWrite(AccSelectPin, LOW);
@@ -646,5 +482,3 @@ void assignNull(char* txt){
     txt[i] = '\0'; 
   }
 }
-
-
