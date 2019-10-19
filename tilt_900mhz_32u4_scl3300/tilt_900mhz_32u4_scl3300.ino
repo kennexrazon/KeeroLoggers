@@ -12,7 +12,7 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 7
 #define RF95_FREQ 868.0
 
-#define SENSEID "41"
+#define SENSEID "39"
 #define AREA "NGR"
 // MSL - 19 - 21 
 // SMR - 22 - 24
