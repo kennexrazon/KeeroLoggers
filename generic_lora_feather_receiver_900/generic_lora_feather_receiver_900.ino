@@ -64,7 +64,7 @@ void setup()
 }
  
 int16_t packetnum = 0;  // packet counter, we increment per xmission
- 
+int cnt = 0;
 void loop()
 {
   delay(100); // Wait 1 second between transmits, could also 'sleep' here!
@@ -81,16 +81,17 @@ void loop()
     // Should be a reply message for us now   
     if (rf95.recv(buf, &len))
    {
-
-      Serial.print("Got: ");
+      cnt++;
+      Serial.print(cnt);
+      Serial.print(": ");
       Serial.println((char*)buf);
-      Serial.print("RSSI: ");
-      Serial.println(rf95.lastRssi(), DEC);    
+//      Serial.print("RSSI: ");
+//      Serial.println(rf95.lastRssi(), DEC);    
 
-      char radiopacket[4] = "ACK";
-      rf95.send((uint8_t *)radiopacket, 4);
-      delay(10);
-      rf95.waitPacketSent();    
+      // char radiopacket[4] = "ACK";
+      // rf95.send((uint8_t *)radiopacket, 4);
+      // delay(10);
+      // rf95.waitPacketSent();    
 
     }
     else
