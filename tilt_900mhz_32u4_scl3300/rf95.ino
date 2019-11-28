@@ -34,7 +34,7 @@ void sendLine(char* line,int inLen,int blinks){
   int del = 1500;
 
   do{
-    assignNull(buf);
+//    assignNull(buf); // di daw kailangang i-clear ang integer array / buffer
 
     Serial.print("..........................................");
     Serial.println(del);
@@ -211,3 +211,5 @@ void assignNull(char* txt){
     txt[i] = '\0'; 
   }
 }
+
+
