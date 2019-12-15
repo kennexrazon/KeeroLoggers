@@ -1,10 +1,10 @@
 void buildID(char* line,char* sensor){
-  strcat(line,"-");
-  strcat(line,SITE);
-  strcat(line,"-");
-  strcat(line,sensor);
-  strcat(line,SENSEID);
-  strcat(line,terminator);
+  strncat(line,"-",1);
+  strncat(line,SITE,3);
+  strncat(line,"-",1);
+  strncat(line,sensor,strlen(sensor));
+  strncat(line,SENSEID,strlen(SENSEID));
+  strncat(line,terminator,1);
 }
 
 bool ack2(char* reply){
@@ -34,7 +34,7 @@ void sendLine(char* line,int inLen,int blinks){
   int del = 1500;
 
   do{
-//    assignNull(buf);
+   assignNull((char *)buf);
 
     Serial.print("..........................................");
     Serial.println(del);
@@ -154,15 +154,15 @@ void buildLineAXL(char* line, struct scl_data dt){
   assignNull(tmpString);
 
   dtostrf(dt.ang_x,5,4,tmpString);
-  strcat(line,tmpString);
-  strcat(line,",");
+  strncat(line,tmpString,strlen(tmpString));
+  strncat(line,",",1);
 
   dtostrf(dt.ang_y,5,4,tmpString);
-  strcat(line,tmpString);
-  strcat(line,",");
+  strncat(line,tmpString,strlen(tmpString));
+  strncat(line,",",1);
 
   dtostrf(dt.ang_z,5,4,tmpString);
-  strcat(line,tmpString);
+  strncat(line,tmpString,strlen(tmpString));
   
   Serial.println(line);
 }
@@ -174,22 +174,22 @@ void buildLineSMS(char* line, struct lgr_data dt){
 
   assignNull(tmpString);
   // insert "BTV:" - battery voltage here
-  strcat(line,"BTV:");
+  strncat(line,"BTV:",4);
   dtostrf(dt.vol,5,4,tmpString);
-  strcat(line,tmpString);
-  strcat(line,",");
+  strncat(line,tmpString,strlen(tmpString));
+  strncat(line,",",1);
   // insert "BTA:" - Battery amperage ? Current
-  strcat(line,"BTA:");
+  strncat(line,"BTA:",4);
   dtostrf(dt.cur,5,4,tmpString);
-  strcat(line,tmpString);
-  strcat(line,",");
+  strncat(line,tmpString,strlen(tmpString));
+  strncat(line,",",1);
   // insert "VWC:"  - volumetric water content
-  strcat(line,"VWC:");
+  strncat(line,"VWC:",4);
   dtostrf(dt.soms1,5,4,tmpString);
   strncat(line,tmpString,5);
-  strcat(line,",");
+  strncat(line,",",1);
   // insert "ACT:" - Accel Temperature
-  strcat(line,"ACT:");
+  strncat(line,"ACT:",4);
   dtostrf(dt.axelTemp,5,4,tmpString);
   strncat(line,tmpString,5);
   // strcat(line,",");

@@ -1,19 +1,24 @@
 #include <math.h>
 #include <SPI.h>
-#include <avr/dtostrf.h>
 #include <RH_RF95.h>
 #include <Wire.h>
 
-const int AccSelectPin = A5;
-SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
+#if defined (ARDUINO_SAMD_ZERO)
+  #include <avr/dtostrf.h>
+  #define RFM95_CS 8
+  #define RFM95_RST 4
+  #define RFM95_INT 3
+  #define VBATPIN A7
 
-#define RFM95_CS 8
-#define RFM95_RST 4
-#define RFM95_INT 3
-#define RF95_FREQ 868.0
+#elif defined (ARDUINO_AVR_FEATHER32U4)
+  #define RFM95_CS 8
+  #define RFM95_RST 4
+  #define RFM95_INT 7
+  #define VBATPIN A9
 
-#define SENSEID "36"
-#define AREA "NGR"
+#endif
+
+// LGBU - LEY
 // MSL - 19 - 21 
 // SMR - 22 - 24
 // MUR - 25 - 27
@@ -24,14 +29,19 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 // MLY - 36 - 38
 // NTE - 39 - 41
 // SGD - 42 - 44
-//
-//
+
+
+#define RF95_FREQ 868.0
+#define SENSEID "52"
+#define AREA "NGR"
 #define SITE "MLY"
 #define terminator "$"
 
-#define VBATPIN A7
 #define somsPin A3
 #define SEND_RETRY_LIMIT 3
+
+const int AccSelectPin = A5;
+SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
@@ -55,6 +65,8 @@ void setup() {
   Serial.print(AREA);Serial.print("-");
   Serial.print(SITE); Serial.print("-");
   Serial.println(SENSEID);
+
+  Serial.println("Tilt sensor");
 
   digitalWrite(RFM95_RST, LOW);
   delay(10);
@@ -93,25 +105,32 @@ void loop(){
   struct lgr_data lgr = get_data_lgr();
   // sc = scl_temp_comp(sc);
 
-  char line1[50] = AREA;//axl gravity
-  char line3[57] = AREA;//ina power + soms
+
+  char axl_msg[50];//axl gravity
+  char sms_msg[57];//ina power + soms
+
+  assignNull(axl_msg);
+  assignNull(sms_msg);
+
+  strncat(axl_msg,AREA,3);
+  strncat(sms_msg,AREA,3);
 
   //build/parse the line packets
 
-  buildLineAXL(line1,sc);
-  buildLineSMS(line3,lgr);
+  buildLineAXL(axl_msg,sc);
+  buildLineSMS(sms_msg,lgr);
 
   //transmit data
-  sendLine(line1,50,1);
+  sendLine(axl_msg,strlen(axl_msg),1);
   // sendLine(line2,50,2);
-  sendLine(line3,57,3);
+  sendLine(sms_msg,strlen(sms_msg),3);
   
   Serial.println("#################################");
   pinMode(A0,OUTPUT);
   // digitalWrite(A0,LOW);
   // delay(1000);
   digitalWrite(A0,HIGH);
-  delay(1000);
+  delay(300000);
 }
 
 struct scl_data scl_ave_axl(){
