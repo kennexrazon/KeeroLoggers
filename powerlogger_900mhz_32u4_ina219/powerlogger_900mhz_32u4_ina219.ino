@@ -15,6 +15,8 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 7
 #define RF95_FREQ 868.0
 
+#define Voltage_Threshold 3.75
+
 #define SENSEID "39"
 #define AREA "NGR"
 // MSL - 19 - 21 
@@ -61,6 +63,7 @@ struct ina_data{
 void setup() {
   Serial.begin(9600);
   ina219.begin();
+  pinMode(11,OUTPUT);
   delay(2000);
   Serial.print(AREA);Serial.print("-");
   Serial.print(SITE); Serial.print("-");
@@ -125,10 +128,16 @@ void loop(){
 //  sendLine(line3,57,3);
   
   Serial.println("#################################");
-  pinMode(A0,OUTPUT);
+  // pinMode(A0,OUTPUT);
   // digitalWrite(A0,LOW);
   // delay(1000);
-  digitalWrite(A0,HIGH);
+  // digitalWrite(A0,HIGH);
+  if (!check_bat(ina)){
+    pinMode(A0,OUTPUT);
+    digitalWrite(A0,HIGH);
+    delay(1000);
+    // digitalWrite(11,LOW);
+  }
 //  delay(1000);
 }
 
@@ -179,4 +188,14 @@ struct ina_data get_ina_data(){
   dt.power_mW = ina219.getPower_mW();
   dt.loadvoltage = dt.busvoltage + (dt.shuntvoltage / 1000);
   return dt;
+}
+
+bool check_bat(struct ina_data dt){
+  // struct ina_data dt;
+  if (dt.busvoltage > Voltage_Threshold) {
+    return true;
+  }
+  else if (dt.busvoltage < Voltage_Threshold) {
+    return false;
+  }
 }
