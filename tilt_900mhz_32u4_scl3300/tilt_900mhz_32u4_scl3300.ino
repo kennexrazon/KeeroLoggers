@@ -12,8 +12,8 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 7
 #define RF95_FREQ 868.0
 
-#define SENSEID "39"
-#define AREA "NGR"
+#define SENSEID "02"
+#define AREA "PCT"
 // MSL - 19 - 21 
 // SMR - 22 - 24
 // MUR - 25 - 27
@@ -24,7 +24,7 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 // MLY - 36 - 38
 // NTE - 39 - 41
 // SGD - 42 - 44
-#define SITE "NTE"
+#define SITE "TST"
 #define terminator "$"
 
 #define VBATPIN A9
@@ -69,7 +69,7 @@ void setup() {
   }
   Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
   
-  rf95.setTxPower(23, false);
+  rf95.setTxPower(20, false);
 
   Serial.println("done initializing......\n");
 

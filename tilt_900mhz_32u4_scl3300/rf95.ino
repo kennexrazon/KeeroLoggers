@@ -27,6 +27,7 @@ bool ack2(char* reply){
 }
 
 
+
 void sendLine(char* line,int inLen,int blinks){
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
   uint8_t  len = sizeof(buf);
@@ -45,6 +46,7 @@ void sendLine(char* line,int inLen,int blinks){
     Serial.println("Sending...");
     delay(10);
 
+    append_retry(line,retry);
     if (!(rf95.send((uint8_t *)line, inLen))){
       Serial.println("CAD timeout before clear channel was detected!");
     }
@@ -73,15 +75,33 @@ void sendLine(char* line,int inLen,int blinks){
     retry++;
 
   // }while(strcmp((char*)buf,"ACK") && (retry < SEND_RETRY_LIMIT));
-  }while(!ack2((char*)buf) && (retry < SEND_RETRY_LIMIT));
+  }while(!ack3((char*)buf) && (retry < SEND_RETRY_LIMIT));
 }
 
 
 
-/*
+
 bool ack(char* reply){
   char* pch;
-  pch = strstr(reply,"ACK");
+  pch = strstr(reply,"ACK1");
+  if (pch != NULL){
+    return true;
+  } else {
+    // Serial.println("No ACK found.");
+    // return true;
+     return false;
+  }
+}
+
+bool ack3(char* reply){
+  char* pch;
+  char ack[6];
+  assignNull(ack);
+  char tmpString[4] = "ACK";
+  strcat(ack,tmpString);
+  strncat(ack,SENSEID,2);
+
+  pch = strstr(reply,ack);
   if (pch != NULL){
     return true;
   } else {
@@ -92,6 +112,7 @@ bool ack(char* reply){
 }
 
 
+/*
 void sendLine(char* line,int inLen,int blinks){
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
   uint8_t  len = sizeof(buf);
@@ -193,10 +214,18 @@ void buildLineSMS(char* line, struct lgr_data dt){
   dtostrf(dt.axelTemp,5,4,tmpString);
   strncat(line,tmpString,5);
   // strcat(line,",");
-
-
  
   Serial.println(line);
+}
+
+void append_retry(char* line, int retry){
+  char tmpString[3];
+  assignNull(tmpString);
+
+  strcat(line,",crc");
+  dtostrf(retry,2,0,tmpString);
+  strcat(line,tmpString);
+
 }
 
 void blinkled(){
