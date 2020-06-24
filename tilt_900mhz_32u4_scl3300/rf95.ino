@@ -28,11 +28,12 @@ bool ack2(char* reply){
 
 
 
-void sendLine(char* line,int inLen,int blinks){
+void sendLine(char* line,int blinks){
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
   uint8_t  len = sizeof(buf);
   int retry = 0;
   int del = 1500;
+  int trueLen = 0;
 
   do{
 //    assignNull(buf); // di daw kailangang i-clear ang integer array / buffer
@@ -47,7 +48,8 @@ void sendLine(char* line,int inLen,int blinks){
     delay(10);
 
     append_retry(line,retry);
-    if (!(rf95.send((uint8_t *)line, inLen))){
+    trueLen = strlen(line) + 1;
+    if (!(rf95.send((uint8_t *)line, trueLen))){
       Serial.println("CAD timeout before clear channel was detected!");
     }
   
@@ -221,11 +223,9 @@ void buildLineSMS(char* line, struct lgr_data dt){
 void append_retry(char* line, int retry){
   char tmpString[3];
   assignNull(tmpString);
-
   strcat(line,",crc");
   dtostrf(retry,2,0,tmpString);
   strcat(line,tmpString);
-
 }
 
 void blinkled(){

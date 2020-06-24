@@ -99,9 +99,9 @@ void loop(){
   buildLineSMS(line3,lgr);
 
   //transmit data
-  sendLine(line1,50,1);
+  sendLine(line1,1);
   // sendLine(line2,50,2);
-  sendLine(line3,57,3);
+  sendLine(line3,3);
   
   Serial.println("#################################");
   pinMode(A0,OUTPUT);
