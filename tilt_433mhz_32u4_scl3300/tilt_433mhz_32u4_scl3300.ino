@@ -13,7 +13,7 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 7
 #define RF95_FREQ 433.0
 
-#define SENSEID "01"
+#define SENSEID "02"
 #define AREA "PCT"
 // MSL - 19 - 21
 // SMR - 22 - 24s
@@ -123,8 +123,8 @@ void processData()
   buildLineSMS(line3, lgr);
 
   //transmit data
-  sendLine(line1, 1);
-  sendLine(line3, 3);
+  sendLine2(line1, 1);
+  sendLine2(line3, 3);
 
   Serial.println("#################################");
   
@@ -136,6 +136,7 @@ void processData()
 void loop()
 {
   processData();
+  while(1);
   /*
   struct scl_data sc = scl_ave_axl();
   struct lgr_data lgr = get_data_lgr();
