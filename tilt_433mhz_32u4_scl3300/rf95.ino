@@ -1,5 +1,8 @@
 void buildID(char *line, char *sensor)
 {
+  assignNull(line);
+  strcpy(line, AREA);
+
   strcat(line, "-");
   strcat(line, SITE);
   strcat(line, "-");
@@ -116,11 +119,11 @@ void sendLine(char *line, int blinks)
   int del = 1000;
   int trueLen = 0;
 
-  for (int i = 0; i < SEND_RETRY_LIMIT; i++)
+  for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
   {
     Serial.println("Starting . . .");
 
-    for (int i = 0; i < blinks; i++)
+    for (int iii = 0; iii < blinks; iii++)
       blinkled();
     assignNull(received); //clear buffer received
 
@@ -174,13 +177,69 @@ void sendLine(char *line, int blinks)
   Serial.println("..........................................");
 }
 
+void sendLine2(char *line, int blinks){
+  uint8_t len = sizeof(buf);
+  char received[100];
+  int retry = 0;
+  int del = 1000;
+  int trueLen = 0;
+  bool correct_ack = false;
+  int start = millis();
+
+  for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
+  {
+      for (int iii = 0; iii < blinks; iii++)
+          blinkled();
+      assignNull(received); //clear buffer received
+      trueLen = strlen(line) + 1;
+      Serial.print("Sending: ");
+      Serial.println(line);
+
+      rf95.send((uint8_t *)line, trueLen); //send data
+      delay(10);
+      rf95.waitPacketSent();
+      // Serial.println(retry);
+      Serial.print("Waiting for GATEWAY reply . . . ");
+      // Serial.println(del);
+      
+      do {
+          // Should be a reply message for us now
+            start = millis();
+            assignNull(buf);
+                rf95.waitAvailableTimeout(del);
+                if (rf95.recv(buf, &len)){
+                    int i = 0;
+                    for (i = 0; i < len; i++) {
+                        received[i] = (uint8_t)buf[i];
+                    }
+                    received[i] = (uint8_t)'\0'; //NULL terminate
+
+                    if (ackNEW(received)) {
+                        correct_ack = true;
+                        ii = SEND_RETRY_LIMIT;
+                        break;
+                    } 
+                    Serial.print("\t\t\t\t::");
+                    Serial.println((char *)buf);
+                    // Serial.print("Gateway RSSI: ");
+                    // Serial.println(rf95.lastRssi(), DEC);
+                } 
+        } while ( correct_ack || ( ( (millis() - start) < 5000 ) ) );
+      retry++;
+      // Serial.println("++++");
+  }
+  Serial.println("..........................................");
+}
+
 bool ackNEW(char *reply)
 {
-  char searchACK[10];
+  char searchACK[100];
+  assignNull(searchACK);
+
   String rcvRply = "ACK";
   String newSenseId = String(SENSEID);
   String finalSenseID = rcvRply + newSenseId;
-  finalSenseID.toCharArray(searchACK, 10);
+  finalSenseID.toCharArray(searchACK, 100);
 
   if (strstr(reply, searchACK))
   {
