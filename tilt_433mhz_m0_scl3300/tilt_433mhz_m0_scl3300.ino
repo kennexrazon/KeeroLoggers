@@ -3,7 +3,8 @@
 #include <avr/dtostrf.h>
 #include <RH_RF95.h>
 #include <Wire.h>
-//#include <EEPROM.h>
+// #include <EEPROM.h>
+#include <Adafruit_SleepyDog.h>
 
 const int AccSelectPin = A5;
 SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
@@ -66,7 +67,9 @@ struct lgr_data
 void setup()
 {
   Serial.begin(9600);
-  delay(2000);
+  int countdownMS = Watchdog.enable(21000);
+  // delay(1000);
+  // while(!Serial) delay(10); 
   Serial.print(AREA);
   Serial.print("-");
   Serial.print(SITE);
@@ -104,8 +107,8 @@ void setup()
   // set_mode4();
   // enableANG(); // enable angle outputs
 
-  randomSeed(analogRead(1));
-  delay(random(3000, 4000));
+  // randomSeed(analogRead(1));
+  // delay(random(3000, 4000));
   blinkled();
   Serial.println("done setup");
   // processData();
@@ -123,8 +126,8 @@ void processData()
   buildLineSMS(line3, lgr);
 
   //transmit data
-  sendLine(line1, 1);
-  sendLine(line3, 3);
+  sendLine2(line1, 1);
+  sendLine3(line3, 3);
 
   Serial.println("#################################");
   
@@ -136,6 +139,9 @@ void processData()
 void loop()
 {
   processData();
+  // while(1);
+  Watchdog.reset();
+  // while(1);
   /*
   struct scl_data sc = scl_ave_axl();
   struct lgr_data lgr = get_data_lgr();
@@ -203,4 +209,3 @@ struct lgr_data get_data_lgr()
 
   return dt;
 }
-
