@@ -4,6 +4,7 @@
 #include <RH_RF95.h>
 #include <Wire.h>
 #include <EEPROM.h>
+#include <Adafruit_SleepyDog.h>
 
 const int AccSelectPin = A5;
 SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
@@ -13,7 +14,7 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 7
 #define RF95_FREQ 433.0
 
-#define SENSEID "02"
+#define SENSEID "06"
 #define AREA "PCT"
 // MSL - 19 - 21
 // SMR - 22 - 24s
@@ -66,7 +67,8 @@ struct lgr_data
 void setup()
 {
   Serial.begin(9600);
-  delay(2000);
+  int countdownMS = Watchdog.enable(10000);
+  delay(1000);
   Serial.print(AREA);
   Serial.print("-");
   Serial.print(SITE);
@@ -104,8 +106,8 @@ void setup()
   // set_mode4();
   // enableANG(); // enable angle outputs
 
-  randomSeed(analogRead(1));
-  delay(random(3000, 4000));
+  // randomSeed(analogRead(1));
+  // delay(random(3000, 4000));
   blinkled();
   Serial.println("done setup");
   // processData();
@@ -136,7 +138,8 @@ void processData()
 void loop()
 {
   processData();
-  while(1);
+  Watchdog.reset();
+  // while(1);
   /*
   struct scl_data sc = scl_ave_axl();
   struct lgr_data lgr = get_data_lgr();
