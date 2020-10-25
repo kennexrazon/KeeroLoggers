@@ -10,7 +10,7 @@ void buildID(char *line, char *sensor)
   strcat(line, SENSEID);
   strcat(line, terminator);
 }
-
+/*
 bool ack2(char *reply)
 {
   if ((reply != NULL) && (reply[0] == '\0'))
@@ -33,7 +33,7 @@ bool ack2(char *reply)
   //   // return false;
   // }
 }
-
+*/
 /*  //original code
 void sendLine(char *line, int blinks)
 {
@@ -109,6 +109,7 @@ void sendLine(char *line, int blinks)
 }
 */
 
+/*
 void sendLine(char *line, int blinks)
 {
   // uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
@@ -176,7 +177,8 @@ void sendLine(char *line, int blinks)
   }
   Serial.println("..........................................");
 }
-
+*/
+/*
 void sendLine2(char *line, int blinks){
   uint8_t len = sizeof(buf);
   char received[100];
@@ -230,7 +232,123 @@ void sendLine2(char *line, int blinks){
   }
   Serial.println("..........................................");
 }
+*/
+void sendLine2(char *line, int blinks){
+  uint8_t len = sizeof(buf);
+  char received[100];
+  int retry = 0;
+  int del = 1000;
+  int trueLen = 0;
+  bool correct_ack = false;
+  unsigned long start = millis();
 
+  for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
+  {
+      for (int iii = 0; iii < blinks; iii++)
+          blinkled();
+      assignNull(received); //clear buffer received
+      trueLen = strlen(line) + 1;
+      Serial.print("Sending: ");
+      Serial.println(line);
+
+      rf95.send((uint8_t *)line, trueLen); //send data
+      delay(10);
+      rf95.waitPacketSent();
+      // Serial.println(retry);
+      Serial.println("Waiting for GATEWAY:AXL reply . . . ");
+      // Serial.println(del);
+      start = millis();
+      do {
+          // Should be a reply message for us now
+            // rf95.setModeRx();
+            
+            assignNull2(buf);
+                rf95.waitAvailableTimeout(del);
+                if (rf95.recv(buf, &len)){
+                    int i = 0;
+                    for (i = 0; i < len; i++) {
+                        received[i] = (uint8_t)buf[i];
+                    }
+                    received[i] = (uint8_t)'\0'; //NULL terminate
+
+                    if (ackNEW2(received)) {
+                        correct_ack = true;
+                        ii = SEND_RETRY_LIMIT;
+                        break;
+                    } 
+                    Serial.print("\t\t\t\t\t\t::");
+                    Serial.println((char *)buf);
+                    // Serial.print("Gateway RSSI: ");
+                    // Serial.println(rf95.lastRssi(), DEC);
+                } else {
+                  Serial.println(".");
+                }
+        } while ( correct_ack  || ( ( (millis() - start) < 3000 ) ) );
+      retry++;
+      // Serial.println("++++");
+  }
+  Serial.println("..........................................");
+}
+
+
+void sendLine3(char *line, int blinks){
+  uint8_t len = sizeof(buf);
+  char received[100];
+  int retry = 0;
+  int del = 1000;
+  int trueLen = 0;
+  bool correct_ack = false;
+  unsigned long start = millis();
+
+  for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
+  {
+      for (int iii = 0; iii < blinks; iii++)
+          blinkled();
+      assignNull(received); //clear buffer received
+      trueLen = strlen(line) + 1;
+      Serial.print("Sending: ");
+      Serial.println(line);
+
+      rf95.send((uint8_t *)line, trueLen); //send data
+      delay(10);
+      rf95.waitPacketSent();
+      // Serial.println(retry);
+      Serial.println("Waiting for GATEWAY:SMS reply . . . ");
+      // Serial.println(del);
+      start = millis();
+      do {
+          // Should be a reply message for us now
+            // rf95.setModeRx();
+            
+            assignNull2(buf);
+                rf95.waitAvailableTimeout(del);
+                if (rf95.recv(buf, &len)){
+                    int i = 0;
+                    for (i = 0; i < len; i++) {
+                        received[i] = (uint8_t)buf[i];
+                    }
+                    received[i] = (uint8_t)'\0'; //NULL terminate
+
+                    if (ackNEW3(received)) {
+                        correct_ack = true;
+                        ii = SEND_RETRY_LIMIT;
+                        break;
+                    } 
+                    Serial.print("\t\t\t\t\t\t::");
+                    Serial.println((char *)buf);
+                    // Serial.print("Gateway RSSI: ");
+                    // Serial.println(rf95.lastRssi(), DEC);
+                } else {
+                  Serial.println(".");
+                }
+        } while ( correct_ack  || ( ( (millis() - start) < 3000 ) ) );
+      retry++;
+      // Serial.println("++++");
+  }
+  Serial.println("..........................................");
+}
+
+/*
 bool ackNEW(char *reply)
 {
   char searchACK[100];
@@ -253,7 +371,52 @@ bool ackNEW(char *reply)
     return false;
   }
 }
+*/
+bool ackNEW2(char *reply)
+{
+  char searchACK[100];
+  assignNull(searchACK);
+  String rcvRply = "ACKAXL";
+  String newSenseId = String(SENSEID);
+  String finalSenseID = rcvRply + newSenseId;
+  finalSenseID.toCharArray(searchACK, 100);
 
+  if (strstr(reply, searchACK))
+  {
+    Serial.print("Received correct ack: ");
+    Serial.println(searchACK);
+    return true;
+  }
+  else
+  {
+    Serial.println("NO ACKAXL!");
+    return false;
+  }
+}
+
+bool ackNEW3(char *reply)
+{
+  char searchACK[100];
+  assignNull(searchACK);
+  String rcvRply = "ACKSMS";
+  String newSenseId = String(SENSEID);
+  String finalSenseID = rcvRply + newSenseId;
+  finalSenseID.toCharArray(searchACK, 100);
+
+  if (strstr(reply, searchACK))
+  {
+    Serial.print("Received correct ack: ");
+    Serial.println(searchACK);
+    return true;
+  }
+  else
+  {
+    Serial.println("NO ACKSMS!");
+    return false;
+  }
+}
+
+/*
 bool ack(char *reply)
 {
   char *pch;
@@ -291,7 +454,7 @@ bool ack3(char *reply)
     return false;
   }
 }
-
+*/
 /*
 void sendLine(char* line,int inLen,int blinks){
   uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
@@ -420,6 +583,14 @@ void blinkled()
 void assignNull(char *txt)
 {
   for (int i = 0; i < strlen(txt); i++)
+  {
+    txt[i] = '\0';
+  }
+}
+
+void assignNull2(uint8_t *txt)
+{
+  for (int i = 0; i < sizeof(txt); i++)
   {
     txt[i] = '\0';
   }

@@ -14,7 +14,7 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 7
 #define RF95_FREQ 433.0
 
-#define SENSEID "06"
+#define SENSEID "02"
 #define AREA "PCT"
 // MSL - 19 - 21
 // SMR - 22 - 24s
@@ -67,8 +67,9 @@ struct lgr_data
 void setup()
 {
   Serial.begin(9600);
-  int countdownMS = Watchdog.enable(10000);
-  delay(1000);
+  
+  // delay(1000);
+  // while(!Serial) delay(10); 
   Serial.print(AREA);
   Serial.print("-");
   Serial.print(SITE);
@@ -110,11 +111,15 @@ void setup()
   // delay(random(3000, 4000));
   blinkled();
   Serial.println("done setup");
+  
   // processData();
 }
 
+
+
 void processData()
 {
+  // Watchdog.enable(25000);
   struct scl_data sc = scl_ave_axl();
   struct lgr_data lgr = get_data_lgr();
   // sc = scl_temp_comp(sc);
@@ -125,20 +130,24 @@ void processData()
   buildLineSMS(line3, lgr);
 
   //transmit data
+  Watchdog.enable(12000);
   sendLine2(line1, 1);
-  sendLine2(line3, 3);
-
+  Watchdog.reset();
+  Watchdog.enable(13000);
+  sendLine3(line3, 3);
   Serial.println("#################################");
   
   // delay(1000);
   digitalWrite(A0, HIGH);
   delay(1000);
+  Watchdog.reset();
+  
 }
 
 void loop()
 {
   processData();
-  Watchdog.reset();
+  // Watchdog.reset();
   // while(1);
   /*
   struct scl_data sc = scl_ave_axl();
