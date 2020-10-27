@@ -67,7 +67,7 @@ struct lgr_data
 void setup()
 {
   Serial.begin(9600);
-  int countdownMS = Watchdog.enable(21000);
+  // int countdownMS = Watchdog.enable(21000);
   // delay(1000);
   // while(!Serial) delay(10); 
   Serial.print(AREA);
@@ -116,6 +116,7 @@ void setup()
 
 void processData()
 {
+  // Watchdog.enable(25000);
   struct scl_data sc = scl_ave_axl();
   struct lgr_data lgr = get_data_lgr();
   // sc = scl_temp_comp(sc);
@@ -126,14 +127,18 @@ void processData()
   buildLineSMS(line3, lgr);
 
   //transmit data
+  Watchdog.enable(12000);
   sendLine2(line1, 1);
+  Watchdog.reset();
+  Watchdog.enable(13000);
   sendLine3(line3, 3);
-
   Serial.println("#################################");
   
   // delay(1000);
   digitalWrite(A0, HIGH);
   delay(1000);
+  Watchdog.reset();
+  
 }
 
 void loop()
