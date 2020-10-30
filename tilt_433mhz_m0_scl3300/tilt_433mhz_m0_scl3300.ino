@@ -14,8 +14,8 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 3
 #define RF95_FREQ 433.0
 
-#define SENSEID "07"
-#define AREA "PCT"
+#define SENSEID "63"
+#define AREA "BCM"
 // MSL - 19 - 21
 // SMR - 22 - 24s
 // MUR - 25 - 27
@@ -32,10 +32,10 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 // TCT - 54 - 56 // phase 4
 // MDR - 57 - 59
 // GEN - 60 - 61  generic codes
-// BACMAN - BCM
-// LRD -- ulit loop road
+// BACMAN - BCM // phase 5
+// LRD - 62 - 67  ( 62-63:m0,HS-10) 
 
-#define SITE "TST"
+#define SITE "LRD"
 #define terminator "$"
 
 #define VBATPIN A7
@@ -87,8 +87,7 @@ void setup()
   while (!rf95.init())
   {
     Serial.println("LoRa radio init failed");
-    while (1)
-      ;
+    while (1);
   }
 
   if (!rf95.setFrequency(RF95_FREQ))
@@ -127,17 +126,17 @@ void processData()
   buildLineSMS(line3, lgr);
 
   //transmit data
-  Watchdog.enable(12000);
+  // Watchdog.enable(12000);
   sendLine2(line1, 1);
-  Watchdog.reset();
-  Watchdog.enable(13000);
+  // Watchdog.reset();
+  // Watchdog.enable(13000);
   sendLine3(line3, 3);
   Serial.println("#################################");
   
   // delay(1000);
   digitalWrite(A0, HIGH);
   delay(1000);
-  Watchdog.reset();
+  // Watchdog.reset();
   
 }
 
@@ -145,7 +144,7 @@ void loop()
 {
   processData();
   // while(1);
-  Watchdog.reset();
+  // Watchdog.reset();
   // while(1);
   /*
   struct scl_data sc = scl_ave_axl();

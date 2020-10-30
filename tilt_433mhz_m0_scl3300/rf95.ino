@@ -189,6 +189,7 @@ void sendLine2(char *line, int blinks){
 
   for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
   {
+      // Watchdog.enable(4000);
       for (int iii = 0; iii < blinks; iii++)
           blinkled();
       assignNull(received); //clear buffer received
@@ -229,7 +230,8 @@ void sendLine2(char *line, int blinks){
                   Serial.println(".");
                 }
         } while ( correct_ack  || ( ( (millis() - start) < 3000 ) ) );
-      retry++;
+      // retry++;
+      // Watchdog.reset();
       // Serial.println("++++");
   }
   Serial.println("..........................................");
@@ -266,9 +268,10 @@ void sendLine3(char *line, int blinks){
   int trueLen = 0;
   bool correct_ack = false;
   unsigned long start = millis();
-
+  // Watchdog.enable(12000);
   for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
   {
+      // Watchdog.enable(4000);
       for (int iii = 0; iii < blinks; iii++)
           blinkled();
       assignNull(received); //clear buffer received
@@ -309,10 +312,12 @@ void sendLine3(char *line, int blinks){
                   Serial.println(".");
                 }
         } while ( correct_ack  || ( ( (millis() - start) < 3000 ) ) );
-      retry++;
+      // retry++;
+      // Watchdog.reset();
       // Serial.println("++++");
   }
   Serial.println("..........................................");
+  // Watchdog.reset();
 }
 
 bool ackNEW3(char *reply)
