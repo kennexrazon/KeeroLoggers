@@ -14,8 +14,9 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 #define RFM95_INT 7
 #define RF95_FREQ 433.0
 
-#define SENSEID "02"
-#define AREA "PCT"
+#define SENSEID "03"
+#define AREA "MGH"
+// #define SomsSensor "ECHO5"
 // MSL - 19 - 21
 // SMR - 22 - 24s
 // MUR - 25 - 27
@@ -34,6 +35,8 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 // GEN - 60 - 61  generic codes
 // BACMAN - BCM
 // LRD -- ulit loop road
+// BACMAN - BCM // phase 5
+// LRD - 62 - 67  ( 62-63:m0,HS-10 || 64 - 65 32u4,ECHO5 || 66 - 67 32u4, HS-10) 
 
 #define SITE "TST"
 #define terminator "$"
@@ -130,23 +133,43 @@ void processData()
   buildLineSMS(line3, lgr);
 
   //transmit data
-  Watchdog.enable(12000);
+  // Watchdog.enable(12000);
   sendLine2(line1, 1);
-  Watchdog.reset();
-  Watchdog.enable(13000);
+  // Watchdog.reset();
+  // Watchdog.enable(13000);
   sendLine3(line3, 3);
   Serial.println("#################################");
   
   // delay(1000);
   digitalWrite(A0, HIGH);
   delay(1000);
-  Watchdog.reset();
+  // Watchdog.reset();
   
 }
 
 void loop()
 {
   processData();
+    // float somsADC = 0.0;
+    // float soms_avg_vwc = 0.0;
+    // float somsVWC = 0.0;
+    
+    // for (int i=0;i <= 9 ;i++) {
+    //   somsADC = analogRead(somsPin);
+      
+    //   Serial.print("ADC:  ");
+    //   Serial.println(somsADC);
+
+    //   somsVWC = (0.0041*somsADC) - 0.4839;
+    //   soms_avg_vwc = soms_avg_vwc + somsVWC; 
+    //   delay(10);
+    // }
+
+    // soms_avg_vwc = (soms_avg_vwc / 10.0);
+    // Serial.print("AVG _ VWC:: ");
+    // Serial.println(soms_avg_vwc);
+
+    // delay(4000);
   // Watchdog.reset();
   // while(1);
   /*
