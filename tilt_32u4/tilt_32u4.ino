@@ -107,16 +107,20 @@ void setup()
   Serial.print("\t");
   Serial.println(keyValueOutput[0].AREA);
   
-  /*
-  if ( strlen(keyValueOutput[0].SENSEID) < 1 ){
-      strcpy(keyValueOutput[0].SENSEID, "999");
-  } 
+  // Serial.println(strlen(keyValueOutput[0].SENSEID));
+  // Serial.println(strlen(keyValueOutput[0].SITE));
+  // Serial.println(strlen(keyValueOutput[0].AREA));
 
-  if ( strlen(keyValueOutput[0].AREA) < 3){
+
+  if (keyValueOutput[0].SENSEID[3] != '\0'){
+      strcpy(keyValueOutput[0].SENSEID, "999");
+  }
+
+  if (keyValueOutput[0].AREA[3] != '\0'){
       strcpy(keyValueOutput[0].AREA, "GEN");
   }
 
-  if ( strlen(keyValueOutput[0].SITE) < 3){
+  if ( keyValueOutput[0].SITE[3] != '\0'){
       strcpy(keyValueOutput[0].SITE, "DEF");
   }
 
@@ -125,7 +129,6 @@ void setup()
   } else {
       RF95_FREQ = 868.0; 
   }  
-  */
 
   strncpy(line1,keyValueOutput[0].AREA,4);
   strncpy(line3,keyValueOutput[0].AREA,4);
