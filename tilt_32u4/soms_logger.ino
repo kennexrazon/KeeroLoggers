@@ -30,24 +30,6 @@ float get_soms_VWC(int pin, int soms_type)
 }
 
 
-// echo 5 soms
-// float get_soms_VWC(int pin) {
-//     float somsADC = 0.0;
-//     float soms_avg_vwc = 0.0;
-//     float somsVWC = 0.0;
-    
-//     for (int i=0;i <= 9 ;i++) {
-//       somsADC = analogRead(pin);
-//       somsVWC = (0.0041*somsADC) - 0.4839;
-//       soms_avg_vwc = soms_avg_vwc + somsVWC; 
-//       delay(10);
-//     }
-
-//     soms_avg_vwc = (soms_avg_vwc / 10.0);
-
-//     return soms_avg_vwc;
-// }
-
 float get_cur()
 {
   return 0.0;
