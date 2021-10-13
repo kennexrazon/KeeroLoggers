@@ -1,5 +1,4 @@
 #include <math.h>
-
 #include <SPI.h>
 //#include <avr/dtostrf.h>
 #include <RH_RF95.h>
