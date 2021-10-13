@@ -2,18 +2,33 @@
 #include <SPI.h>
 #include <RH_RF95.h>
 #include <Wire.h>
-#include <EEPROMex.h> 
 #include <Adafruit_SleepyDog.h>
 
 const int AccSelectPin = A5;
 SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 
-#define RFM95_CS 8
-#define RFM95_RST 4
-#define RFM95_INT 7
-float RF95_FREQ; 
 
-int address = 0;
+#if defined (ARDUINO_SAMD_ZERO)
+  #include <avr/dtostrf.h>
+  #include <FlashStorage_SAMD.h>
+  #define FLASH_DEBUG       0
+  #define RFM95_CS 8
+  #define RFM95_RST 4
+  #define RFM95_INT 3
+  #define VBATPIN A7
+  const int WRITTEN_SIGNATURE = 0xBEEFDEED;
+  #define  MICROCON "M0"
+#elif defined (ARDUINO_AVR_FEATHER32U4)
+  #include <EEPROMex.h> 
+  #define RFM95_CS 8
+  #define RFM95_RST 4
+  #define RFM95_INT 7
+  #define VBATPIN A9
+  #define MICROCON "32U4"
+#endif
+
+float RF95_FREQ; 
+const int address = 0;
 int SOMS_TYPE = 1;
 struct keyValuePair 
 {
@@ -54,7 +69,7 @@ keyValuePair keyValueOutput[1];
 //#define SITE "TST"
 #define terminator "$"
 
-#define VBATPIN A9
+// #define VBATPIN A9
 #define somsPin A3
 #define SEND_RETRY_LIMIT 3
 
@@ -81,77 +96,81 @@ struct lgr_data
 
 void setup()
 {
-  Serial.begin(9600);
-  long now = millis();
-  pinMode(12,OUTPUT);
-  digitalWrite(12,HIGH);
-  pinMode(11,INPUT);
+    Serial.begin(9600);
+    long now = millis();
+    pinMode(12,OUTPUT);
+    digitalWrite(12,HIGH);
+    pinMode(11,INPUT);
 
-  if (digitalRead(11)){
-    storeToEeprom();
-  }
+    if (digitalRead(11)){
+        storeToEeprom();
+    }
 
-  EEPROM.readBlock(address, keyValueOutput,1);
+    #if defined (ARDUINO_AVR_FEATHER32U4)
+        EEPROM.readBlock(address, keyValueOutput,1);
+    #elif defined (ARDUINO_SAMD_ZERO)
+        EEPROM.get(address,keyValueOutput);
+    #endif
 
-  Serial.print(keyValueOutput[0].SENSEID);
-  Serial.print("\t");
-  Serial.print(keyValueOutput[0].SITE);
-  Serial.print("\t");
-  Serial.println(keyValueOutput[0].AREA);
+    Serial.print(keyValueOutput[0].SENSEID);
+    Serial.print("\t");
+    Serial.print(keyValueOutput[0].SITE);
+    Serial.print("\t");
+    Serial.println(keyValueOutput[0].AREA);
 
 
-  if (keyValueOutput[0].SENSEID[3] != '\0'){
-      strcpy(keyValueOutput[0].SENSEID, "999");
-  }
+    if (keyValueOutput[0].SENSEID[3] != '\0'){
+        strcpy(keyValueOutput[0].SENSEID, "999");
+    }
 
-  if (keyValueOutput[0].AREA[3] != '\0'){
-      strcpy(keyValueOutput[0].AREA, "GEN");
-  }
+    if (keyValueOutput[0].AREA[3] != '\0'){
+        strcpy(keyValueOutput[0].AREA, "GEN");
+    }
 
-  if ( keyValueOutput[0].SITE[3] != '\0'){
-      strcpy(keyValueOutput[0].SITE, "DEF");
-  }
+    if ( keyValueOutput[0].SITE[3] != '\0'){
+        strcpy(keyValueOutput[0].SITE, "DEF");
+    }
 
-  if (keyValueOutput[0].FREQ == 1){
-      RF95_FREQ = 433.0;
-  } else {
-      RF95_FREQ = 868.0; 
-  }  
+    if (keyValueOutput[0].FREQ == 1){
+        RF95_FREQ = 433.0;
+    } else {
+        RF95_FREQ = 868.0; 
+    }  
 
-  strncpy(line1,keyValueOutput[0].AREA,4);
-  strncpy(line3,keyValueOutput[0].AREA,4);
+    strncpy(line1,keyValueOutput[0].AREA,4);
+    strncpy(line3,keyValueOutput[0].AREA,4);
 
-  pinMode(A0, OUTPUT);
-  digitalWrite(A0,LOW);
+    pinMode(A0, OUTPUT);
+    digitalWrite(A0,LOW);
 
-  digitalWrite(RFM95_RST, LOW);
-  delay(10);
-  digitalWrite(RFM95_RST, HIGH);
-  delay(10);
+    digitalWrite(RFM95_RST, LOW);
+    delay(10);
+    digitalWrite(RFM95_RST, HIGH);
+    delay(10);
 
-  while (!rf95.init())
-  {
-    Serial.println("LoRa radio init failed, shutting down");
-    // while (1);
-    digitalWrite(A0, HIGH);
-    delay(1000);
-  }
+    while (!rf95.init())
+    {
+        Serial.println("LoRa radio init failed, shutting down");
+        // while (1);
+        digitalWrite(A0, HIGH);
+        delay(1000);
+    }
 
-  if (!rf95.setFrequency(RF95_FREQ))
-  {
-    Serial.println("setFrequency failed");
-  }
-  Serial.print("Set Freq to: ");
-  Serial.println(RF95_FREQ);
+    if (!rf95.setFrequency(RF95_FREQ))
+    {
+        Serial.println("setFrequency failed");
+    }
+    Serial.print("Set Freq to: ");
+    Serial.println(RF95_FREQ);
 
-  rf95.setTxPower(20, false);
+    rf95.setTxPower(20, false);
 
-  Serial.println("done initializing......\n");
+    Serial.println("done initializing......\n");
 
-  SPI.begin();
-  pinMode(AccSelectPin, OUTPUT);
-  blinkled();
-  Serial.println("done setup");
+    SPI.begin();
+    pinMode(AccSelectPin, OUTPUT);
+    blinkled();
+    Serial.println("done setup");
   
 }
 
@@ -241,8 +260,16 @@ int storeToEeprom(){
     Serial.println("Failed to save new FREQUENCY");
     return -1;
   }
-
-  EEPROM.writeBlock(address, keyValueInput,1);
+  #if defined (ARDUINO_AVR_FEATHER32U4)
+    EEPROM.writeBlock(address, keyValueInput,1);
+  #elif defined (ARDUINO_SAMD_ZERO)
+    EEPROM.put(address, keyValueInput);
+    if (!EEPROM.getCommitASAP())
+    {
+        Serial.println("CommitASAP not set. Need commit()");
+        EEPROM.commit();
+    }
+  #endif
 }
 
 
@@ -267,7 +294,6 @@ int readFromSerial(String input,char *temp,int type){
       }
   }
   if ( Serial.available() > 0 ) {
-      // Serial.setTimeout(10);
       input = Serial.readString();
   }
   if (type == 1){
@@ -298,11 +324,9 @@ int readFromSerial(String input,char *temp,int type){
             if (type == 2){
                 input.toCharArray(temp,4);
                 strcpy(keyValueInput[0].SITE, temp);
-              // Serial.print("SITE ID will be set to: ");
             } else if(type == 3){
                 input.toCharArray(temp,4);
                 strcpy(keyValueInput[0].AREA, temp);
-              // Serial.print("AREA ID will be set to: ");
           } 
           Serial.print(input);
           return 1;
@@ -325,6 +349,5 @@ int readFromSerial(String input,char *temp,int type){
           return 1;
       }
   }
-  // }
   return -1;
 }
