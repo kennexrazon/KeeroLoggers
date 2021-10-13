@@ -18,7 +18,7 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 float RF95_FREQ; 
 
 int address = 0;
-
+int SOMS_TYPE = 1;
 struct keyValuePair {
 char SENSEID[4];
 char AREA[4];
@@ -282,7 +282,7 @@ struct lgr_data get_data_lgr()
 
   dt.vol = get_bat_vol();
   dt.cur = get_cur();
-  dt.soms1 = get_soms_VWC(somsPin);
+  dt.soms1 = get_soms_VWC(somsPin,SOMS_TYPE);
   dt.axelTemp = getTemp();
 
   return dt;
@@ -341,7 +341,7 @@ int readFromSerial(String input,char *temp,int type){
     Serial.println("New AREA ID (XXX): ");
   } else if (type == 4){
     Serial.println("Pick Frequency:");
-    Serial.println("Type 1 for 433Mhz \t Type 2 for 900Mhz");
+    Serial.println("Type 1 for 433Mhz \t Type 2 for 868Mhz");
   }
 
   while (!Serial.available()){

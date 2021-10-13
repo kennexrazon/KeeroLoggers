@@ -254,9 +254,7 @@ void sendLine2(char *line, int blinks){
       rf95.send((uint8_t *)line, trueLen); //send data
       delay(10);
       rf95.waitPacketSent();
-      // Serial.println(retry);
       Serial.println("Waiting for GATEWAY:AXL reply . . . ");
-      // Serial.println(del);
       start = millis();
       do {
           // Should be a reply message for us now
@@ -265,6 +263,7 @@ void sendLine2(char *line, int blinks){
             assignNull2(buf);
                 rf95.waitAvailableTimeout(del);
                 if (rf95.recv(buf, &len)){
+                    Serial.println((char*)buf);
                     int i = 0;
                     for (i = 0; i < len; i++) {
                         received[i] = (uint8_t)buf[i];
@@ -323,6 +322,7 @@ void sendLine3(char *line, int blinks){
             assignNull2(buf);
                 rf95.waitAvailableTimeout(del);
                 if (rf95.recv(buf, &len)){
+                  Serial.println((char*)buf);
                     int i = 0;
                     for (i = 0; i < len; i++) {
                         received[i] = (uint8_t)buf[i];
