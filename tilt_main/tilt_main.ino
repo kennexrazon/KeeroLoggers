@@ -30,12 +30,14 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 float RF95_FREQ; 
 const int address = 0;
 int SOMS_TYPE = 1;
+
 struct keyValuePair 
 {
     char SENSEID[4];
     char AREA[4];
     char SITE[4];
     int FREQ;
+    int  SOMS_SENSOR;
 };
 
 keyValuePair keyValueInput[1];
@@ -67,9 +69,8 @@ keyValuePair keyValueOutput[1];
 // LRD - 62 - 67  ( 62-63:m0,HS-10 || 64 - 65 32u4,ECHO5 || 66 - 67 32u4, HS-10) 
 
 //#define SITE "TST"
-#define terminator "$"
 
-// #define VBATPIN A9
+#define terminator "$"
 #define somsPin A3
 #define SEND_RETRY_LIMIT 3
 
@@ -88,10 +89,10 @@ struct scl_data
 
 struct lgr_data
 {
-  float vol;
-  float cur;
-  float soms1;
-  float axelTemp;
+    float vol;
+    float cur;
+    float soms1;
+    float axelTemp;
 } struct_lgr_data;
 
 void setup()
@@ -112,31 +113,8 @@ void setup()
         EEPROM.get(address,keyValueOutput);
     #endif
 
-    Serial.print(keyValueOutput[0].SENSEID);
-    Serial.print("\t");
-    Serial.print(keyValueOutput[0].SITE);
-    Serial.print("\t");
-    Serial.println(keyValueOutput[0].AREA);
-
-
-    if (keyValueOutput[0].SENSEID[3] != '\0'){
-        strcpy(keyValueOutput[0].SENSEID, "999");
-    }
-
-    if (keyValueOutput[0].AREA[3] != '\0'){
-        strcpy(keyValueOutput[0].AREA, "GEN");
-    }
-
-    if ( keyValueOutput[0].SITE[3] != '\0'){
-        strcpy(keyValueOutput[0].SITE, "DEF");
-    }
-
-    if (keyValueOutput[0].FREQ == 1){
-        RF95_FREQ = 433.0;
-    } else {
-        RF95_FREQ = 868.0; 
-    }  
-
+    displayConfig();
+    
     strncpy(line1,keyValueOutput[0].AREA,4);
     strncpy(line3,keyValueOutput[0].AREA,4);
 
@@ -151,7 +129,6 @@ void setup()
     while (!rf95.init())
     {
         Serial.println("LoRa radio init failed, shutting down");
-        // while (1);
         digitalWrite(A0, HIGH);
         delay(1000);
     }
@@ -174,10 +151,39 @@ void setup()
   
 }
 
+void displayConfig(){
+    if (keyValueOutput[0].SENSEID[3] != '\0'){
+        strcpy(keyValueOutput[0].SENSEID, "999");
+    }
 
+    if (keyValueOutput[0].AREA[3] != '\0'){
+        strcpy(keyValueOutput[0].AREA, "GEN");
+    }
+
+    if ( keyValueOutput[0].SITE[3] != '\0'){
+        strcpy(keyValueOutput[0].SITE, "DEF");
+    }
+
+    if (keyValueOutput[0].FREQ == 1){
+        RF95_FREQ = 433.0;
+    } else {
+        RF95_FREQ = 868.0; 
+    }  
+
+    if (keyValueOutput[0].SOMS_SENSOR == 1){
+        SOMS_TYPE = 2; // HC-10
+    } else {
+        SOMS_TYPE = 1; // ECHO-5
+    } 
+
+    Serial.print(keyValueOutput[0].SENSEID);
+    Serial.print("\t");
+    Serial.print(keyValueOutput[0].SITE);
+    Serial.print("\t");
+    Serial.println(keyValueOutput[0].AREA);
+}
 void processData()
 {
-  // Watchdog.enable(25000);
   struct scl_data sc = scl_ave_axl();
   struct lgr_data lgr = get_data_lgr();
 
@@ -201,75 +207,74 @@ void loop()
 
 struct scl_data scl_ave_axl()
 {
-  int samples = 1;
-  double X = 0.0;
-  double Y = 0.0;
-  double Z = 0.0;
-  // double temp = 0.0;
+    int samples = 1;
+    double X = 0.0;
+    double Y = 0.0;
+    double Z = 0.0;
 
-  struct scl_data sc;
-  sc.ang_x = get_accx();
-  sc.ang_y = get_accy();
-  sc.ang_z = get_accz();
-  return sc;
+    struct scl_data sc;
+    sc.ang_x = get_accx();
+    sc.ang_y = get_accy();
+    sc.ang_z = get_accz();
+    return sc;
 }
 
 struct lgr_data get_data_lgr()
 {
-  struct lgr_data dt;
+    struct lgr_data dt;
 
-  dt.vol = get_bat_vol();
-  dt.cur = get_cur();
-  dt.soms1 = get_soms_VWC(somsPin,SOMS_TYPE);
-  dt.axelTemp = getTemp();
+    dt.vol = get_bat_vol();
+    dt.cur = get_cur();
+    dt.soms1 = get_soms_VWC(somsPin,SOMS_TYPE);
+    dt.axelTemp = getTemp();
 
-  return dt;
+    return dt;
 }
 
 int storeToEeprom(){
-  String sid,area,site,freq;
-  char temp1[4]; 
-  long start_time;
+    String sid,area,site,freq;
+    char temp1[4]; 
+    long start_time;
 
-  Serial.println("Store to EEPROM");
+    Serial.println("Store to EEPROM");
 
-  if (readFromSerial(sid,temp1,1) > 0){
-    Serial.println(">>>");
-  } else {
-    Serial.println("Failed to save new SENSOR ID");
-    return -1;
-  }
-
-  if (readFromSerial(site,temp1,2) > 0){
-    Serial.println(">>>");
-  } else {
-    Serial.println("Failed to save new SITE ID");
-    return -1;
-  }
-
-  if (readFromSerial(area,temp1,3) > 0){
-    Serial.println(">>>");
-  } else {
-    Serial.println("Failed to save new AREA ID");
-    return -1;
-  }
-
-  if (readFromSerial(freq,temp1,4) > 0){
-    Serial.println(">>>");
-  } else {
-    Serial.println("Failed to save new FREQUENCY");
-    return -1;
-  }
-  #if defined (ARDUINO_AVR_FEATHER32U4)
-    EEPROM.writeBlock(address, keyValueInput,1);
-  #elif defined (ARDUINO_SAMD_ZERO)
-    EEPROM.put(address, keyValueInput);
-    if (!EEPROM.getCommitASAP())
-    {
-        Serial.println("CommitASAP not set. Need commit()");
-        EEPROM.commit();
+    if (readFromSerial(sid,temp1,1) > 0){
+        Serial.println(">>>");
+    } else {
+        Serial.println("Failed to save new SENSOR ID");
+        return -1;
     }
-  #endif
+
+    if (readFromSerial(site,temp1,2) > 0){
+        Serial.println(">>>");
+    } else {
+        Serial.println("Failed to save new SITE ID");
+        return -1;
+    }
+
+    if (readFromSerial(area,temp1,3) > 0){
+        Serial.println(">>>");
+    } else {
+        Serial.println("Failed to save new AREA ID");
+        return -1;
+    }
+
+    if (readFromSerial(freq,temp1,4) > 0){
+        Serial.println(">>>");
+    } else {
+        Serial.println("Failed to save new FREQUENCY");
+        return -1;
+    }
+    #if defined (ARDUINO_AVR_FEATHER32U4)
+        EEPROM.writeBlock(address, keyValueInput,1);
+    #elif defined (ARDUINO_SAMD_ZERO)
+        EEPROM.put(address, keyValueInput);
+        if (!EEPROM.getCommitASAP())
+        {
+            Serial.println("CommitASAP not set. Need commit()");
+            EEPROM.commit();
+        }
+    #endif
 }
 
 
@@ -303,6 +308,7 @@ int readFromSerial(String input,char *temp,int type){
           Serial.println(input);
           return -1;
       } else {
+          Serial.print(">>");
           Serial.print(input);
           input.toCharArray(temp,4);
           strcpy(keyValueInput[0].SENSEID, temp);
@@ -328,6 +334,7 @@ int readFromSerial(String input,char *temp,int type){
                 input.toCharArray(temp,4);
                 strcpy(keyValueInput[0].AREA, temp);
           } 
+          Serial.print(">>");
           Serial.print(input);
           return 1;
       }
@@ -335,18 +342,19 @@ int readFromSerial(String input,char *temp,int type){
         input.replace("\n","");
         input.replace("\r","");
         if (!input.toInt() ){
-          Serial.println("Pick Frequency require 1 or 2.");
-          Serial.print("You entered: ");
-          Serial.println(input);
-          return -1;
+            Serial.println("Pick Frequency require 1 or 2.");
+            Serial.print("You entered: ");
+            Serial.println(input);
+            return -1;
         } else {
-          if (input == "1"){
-              Serial.print("433Mhz");
-          } else if ( input == "2"){
-              Serial.print("868Mhz");
-          }
-          keyValueInput[0].FREQ = input.toInt();
-          return 1;
+            Serial.print(">>");
+            if (input == "1"){
+                Serial.print("433Mhz");
+            } else if ( input == "2"){
+                Serial.print("868Mhz");
+            }
+            keyValueInput[0].FREQ = input.toInt();
+            return 1;
       }
   }
   return -1;
