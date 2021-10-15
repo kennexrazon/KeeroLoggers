@@ -7,16 +7,28 @@
 const int AccSelectPin = A5;
 SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
 
+struct keyValuePair 
+{
+    char SENSEID[4];
+    char AREA[4];
+    char SITE[4];
+    int FREQ;
+    int  SOMS_SENSOR;
+};
+
+keyValuePair keyValueInput[1];
+keyValuePair keyValueOutput[1];
 
 #if defined (ARDUINO_SAMD_ZERO)
   #include <avr/dtostrf.h>
-  #include <FlashStorage_SAMD.h>
+  #include <FlashStorage.h>
   #define FLASH_DEBUG       0
   #define RFM95_CS 8
   #define RFM95_RST 4
   #define RFM95_INT 3
   #define VBATPIN A7
   const int WRITTEN_SIGNATURE = 0xBEEFDEED;
+  FlashStorage(flashStorage,keyValuePair);
   #define  MICROCON "M0"
 #elif defined (ARDUINO_AVR_FEATHER32U4)
   #include <EEPROMex.h> 
@@ -31,17 +43,16 @@ float RF95_FREQ;
 const int address = 0;
 int SOMS_TYPE = 1;
 
-struct keyValuePair 
-{
-    char SENSEID[4];
-    char AREA[4];
-    char SITE[4];
-    int FREQ;
-    int  SOMS_SENSOR;
-};
+// struct keyValuePair 
+// {
+//     char SENSEID[4];
+//     char AREA[4];
+//     char SITE[4];
+//     int FREQ;
+//     int  SOMS_SENSOR;
+// };
 
-keyValuePair keyValueInput[1];
-keyValuePair keyValueOutput[1];
+
 
 
 //#define SENSEID "04"
@@ -110,7 +121,8 @@ void setup()
     #if defined (ARDUINO_AVR_FEATHER32U4)
         EEPROM.readBlock(address, keyValueOutput,1);
     #elif defined (ARDUINO_SAMD_ZERO)
-        EEPROM.get(address,keyValueOutput);
+        // EEPROM.read(address,keyValueOutput);
+        keyValueOutput[0] = flashStorage.read();
     #endif
 
     displayConfig();
@@ -268,13 +280,10 @@ int storeToEeprom(){
     #if defined (ARDUINO_AVR_FEATHER32U4)
         EEPROM.writeBlock(address, keyValueInput,1);
     #elif defined (ARDUINO_SAMD_ZERO)
-        EEPROM.put(address, keyValueInput);
-        if (!EEPROM.getCommitASAP())
-        {
-            Serial.println("CommitASAP not set. Need commit()");
-            EEPROM.commit();
-        }
+        flashStorage.write(keyValueInput[0]);
     #endif
+    Serial.println("Storing done!");
+    return 1;
 }
 
 
