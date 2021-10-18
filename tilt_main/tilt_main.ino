@@ -118,13 +118,14 @@ void setup()
     pinMode(READPROPSPIN,INPUT);
 
     if (digitalRead(READPROPSPIN)==HIGH){
-        getSensorProps();
+        if (getSensorProps()){
         // storeToEeprom();
-        #if defined (ARDUINO_AVR_FEATHER32U4)
-            EEPROM.writeBlock(address, &this_sensor, 1);
-        #elif defined (ARDUINO_SAMD_ZERO)
-            props_storage.write(this_sensor);
-        #endif
+            #if defined (ARDUINO_AVR_FEATHER32U4)
+                EEPROM.writeBlock(address, &this_sensor, 1);
+            #elif defined (ARDUINO_SAMD_ZERO)
+                props_storage.write(this_sensor);
+            #endif
+        }
     }
 
     #if defined (ARDUINO_AVR_FEATHER32U4)
