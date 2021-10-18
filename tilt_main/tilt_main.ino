@@ -22,7 +22,8 @@
 // BACMAN - BCM // phase 5
 // LRD - 62 - 67  ( 62-63:m0,HS-10 || 64 - 65 32u4,ECHO5 || 66 - 67 32u4, HS-10) 
 
-//#define SITE "TST"
+//#define site "TST"
+
 
 #include <math.h>
 #include <SPI.h>
@@ -30,20 +31,17 @@
 #include <Wire.h>
 #include <Adafruit_SleepyDog.h>
 
-const int AccSelectPin = A5;
-SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
-
-
 #if defined (ARDUINO_SAMD_ZERO)
   #include <avr/dtostrf.h>
-  #include <FlashStorage_SAMD.h>
-  #define FLASH_DEBUG       0
+  #include <FlashStorage.h>
+  #define FLASH_DEBUG 0
   #define RFM95_CS 8
   #define RFM95_RST 4
   #define RFM95_INT 3
   #define VBATPIN A7
-  const int WRITTEN_SIGNATURE = 0xBEEFDEED;
+  // FlashStorage(flashStorage,keyValuePair); 
   #define  MICROCON "M0"
+  #define UC_TYPE 2
 #elif defined (ARDUINO_AVR_FEATHER32U4)
   #include <EEPROMex.h> 
   #define RFM95_CS 8
@@ -51,9 +49,22 @@ SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
   #define RFM95_INT 7
   #define VBATPIN A9
   #define MICROCON "32U4"
+  #define UC_TYPE 1
 #endif
 
-float rf95_freq; 
+#define terminator "$"
+#define somsPin A3
+#define SEND_RETRY_LIMIT 3
+#define RF_PAYLOAD_MAX_CHAR 120
+#define READPROPSPIN 11
+#define HIGHPROPSPIN 12
+
+
+const int WRITTEN_SIGNATURE = 0xBEEFDEED;
+const int AccSelectPin = A5;
+SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
+
+
 const int address = 0;
 int SOMS_TYPE = 1;
 
@@ -61,61 +72,69 @@ struct SensorProps
 {
     char sense_id[4];
     char area[4];
-    char SITE[4];
+    char site[4];
     int freq;
     int soms_type;
+    float rf95_freq; 
 };
 
 SensorProps inputProps;
-SensorProps outputProps;
+SensorProps this_sensor;
 
-#define terminator "$"
-#define somsPin A3
-#define SEND_RETRY_LIMIT 3
+#if defined (ARDUINO_SAMD_ZERO)
+    FlashStorage(props_storage,SensorProps);
+#endif
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
-char line1[60];
-char line3[60];
+char line1[RH_RF95_MAX_MESSAGE_LEN];
+char line3[RH_RF95_MAX_MESSAGE_LEN];
 uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
 
-struct scl_data
+struct SclData
 {
     double ang_x;
     double ang_y;
     double ang_z;
-} struct_scl_data;
+} struct_SclData;
 
-struct lgr_data
+struct LgrData
 {
     float vol;
     float cur;
     float soms1;
     float axelTemp;
-} struct_lgr_data;
+} struct_LgrData;
 
 void setup()
 {
     Serial.begin(9600);
     long now = millis();
-    pinMode(12,OUTPUT);
-    digitalWrite(12,HIGH);
-    pinMode(11,INPUT);
+    pinMode(HIGHPROPSPIN,OUTPUT);
+    digitalWrite(HIGHPROPSPIN,HIGH);
+    pinMode(READPROPSPIN,INPUT);
 
-    if (digitalRead(11)){
-        storeToEeprom();
+    if (digitalRead(READPROPSPIN)==HIGH){
+        getSensorProps();
+        // storeToEeprom();
+        #if defined (ARDUINO_AVR_FEATHER32U4)
+            EEPROM.writeBlock(address, &this_sensor, 1);
+        #elif defined (ARDUINO_SAMD_ZERO)
+            props_storage.write(this_sensor);
+        #endif
     }
-
+// else{
     #if defined (ARDUINO_AVR_FEATHER32U4)
-        EEPROM.readBlock(address, keyValueOutput,1);
+        EEPROM.readBlock(address, &this_sensor,1);
     #elif defined (ARDUINO_SAMD_ZERO)
-        EEPROM.get(address,keyValueOutput);
+        this_sensor = props_storage.read();
     #endif
+    // }
 
     displayConfig();
     
-    strncpy(line1,outputProps.area,4);
-    strncpy(line3,outputProps.area,4);
+    strncpy(line1,this_sensor.area,4);
+    strncpy(line3,this_sensor.area,4);
 
     pinMode(A0, OUTPUT);
     digitalWrite(A0,LOW);
@@ -132,12 +151,12 @@ void setup()
         delay(1000);
     }
 
-    if (!rf95.setFrequency(rf95_freq))
+    if (!rf95.setFrequency(this_sensor.rf95_freq))
     {
         Serial.println("setFrequency failed");
     }
     Serial.print("Set Freq to: ");
-    Serial.println(rf95_freq);
+    Serial.println(this_sensor.rf95_freq);
 
     rf95.setTxPower(23, false);
 
@@ -147,80 +166,81 @@ void setup()
     pinMode(AccSelectPin, OUTPUT);
     blinkled();
     Serial.println("done setup");
-  
+ 
 }
 
-void displayConfig(){
-    if (outputProps.sense_id[3] != '\0'){
-        strcpy(outputProps.sense_id, "999");
-    }
-
-    if (outputProps.area[3] != '\0'){
-        strcpy(outputProps.area, "GEN");
-    }
-
-    if ( outputProps.SITE[3] != '\0'){
-        strcpy(outputProps.SITE, "DEF");
-    }
-
-    if (outputProps.freq == 1){
-        rf95_freq = 433.0;
-    } else {
-        rf95_freq = 868.0; 
-    }  
-
-    if (outputProps.soms_type == 1){
-        SOMS_TYPE = 2; // HC-10
-    } else {
-        SOMS_TYPE = 1; // ECHO-5
-    } 
-
-    Serial.print(outputProps.sense_id);
-    Serial.print("\t");
-    Serial.print(outputProps.SITE);
-    Serial.print("\t");
-    Serial.println(outputProps.area);
-}
-void processData()
-{
-  struct scl_data sc = scl_ave_axl();
-  struct lgr_data lgr = get_data_lgr();
-
-  //build/parse the line packets
-
-  buildLineAXL(line1, sc);
-  buildLineSMS(line3, lgr);
-
-  sendLine2(line1, 1);
-  sendLine3(line3, 3);
-  Serial.println("#################################");
-  
-  digitalWrite(A0, HIGH);
-  delay(5000);
-}
 
 void loop()
 {
-  processData();
+    SclData sc = scl_ave_axl();
+    LgrData lgr = get_data_lgr();
+
+    //build/parse the line packets
+
+    buildLineAXL(line1, sc);
+    buildLineSMS(line3, lgr);
+
+    sendLine3(line1, 1, "ACKAXL");
+    sendLine3(line3, 3, "ACKSMS");
+    Serial.println("#################################");
+
+    digitalWrite(A0, HIGH);
+    delay(1000);
+
 }
 
-struct scl_data scl_ave_axl()
+void displayConfig(){
+    if (this_sensor.sense_id[3] != '\0'){
+        strcpy(this_sensor.sense_id, "999");
+    }
+
+    if (this_sensor.area[3] != '\0'){
+        strcpy(this_sensor.area, "GEN");
+    }
+
+    if ( this_sensor.site[3] != '\0'){
+        strcpy(this_sensor.site, "DEF");
+    }
+
+    // if (this_sensor.freq == 1){
+    //     rf95_freq = 433.0;
+    // } else {
+    //     rf95_freq = 868.0; 
+    // }  
+
+    // this_sensor.soms_type
+
+    // if (this_sensor.soms_type == 1){
+    //     SOMS_TYPE = 2; // HC-10
+    // } else {
+    //     SOMS_TYPE = 1; // ECHO-5
+    // } 
+
+    Serial.print(this_sensor.site);
+    Serial.print("-");
+    Serial.println(this_sensor.area);
+    Serial.print("-");
+    Serial.print(this_sensor.sense_id);
+}
+
+
+struct SclData scl_ave_axl()
 {
     int samples = 1;
     double X = 0.0;
     double Y = 0.0;
     double Z = 0.0;
 
-    struct scl_data sc;
+    struct SclData sc;
     sc.ang_x = get_accx();
     sc.ang_y = get_accy();
     sc.ang_z = get_accz();
     return sc;
 }
 
-struct lgr_data get_data_lgr()
+struct LgrData get_data_lgr()
 {
-    struct lgr_data dt;
+    struct LgrData dt;
 
     dt.vol = get_bat_vol();
     dt.cur = get_cur();
@@ -231,130 +251,143 @@ struct lgr_data get_data_lgr()
 }
 
 int storeToEeprom(){
-    String sid,area,site,freq;
-    char temp1[4]; 
-    long start_time;
-
-    Serial.println("Store to EEPROM");
-
-    if (readFromSerial(sid,temp1,1) > 0){
-        Serial.println(">>>");
-    } else {
-        Serial.println("Failed to save new SENSOR ID");
-        return -1;
-    }
-
-    if (readFromSerial(site,temp1,2) > 0){
-        Serial.println(">>>");
-    } else {
-        Serial.println("Failed to save new SITE ID");
-        return -1;
-    }
-
-    if (readFromSerial(area,temp1,3) > 0){
-        Serial.println(">>>");
-    } else {
-        Serial.println("Failed to save new area ID");
-        return -1;
-    }
-
-    if (readFromSerial(freq,temp1,4) > 0){
-        Serial.println(">>>");
-    } else {
-        Serial.println("Failed to save new freqUENCY");
-        return -1;
-    }
-    #if defined (ARDUINO_AVR_FEATHER32U4)
-        EEPROM.writeBlock(address, keyValueInput,1);
-    #elif defined (ARDUINO_SAMD_ZERO)
-        EEPROM.put(address, keyValueInput);
-        if (!EEPROM.getCommitASAP())
-        {
-            Serial.println("CommitASAP not set. Need commit()");
-            EEPROM.commit();
-        }
-    #endif
+    return 0;
 }
 
+void getSerialInput(char *input){
+    char inChar;
+    int i=0;
+    long start = millis();
+    // Serial.println(start);
 
-int readFromSerial(String input,char *temp,int type){
-  long start = millis();
-  if (type == 1){
-    Serial.println("New SENSOR ID (000 - 999): ");
-  } else if (type == 2){
-    Serial.println("New SITE ID (XXX): ");
-  } else if (type == 3){
-    Serial.println("New area ID (XXX): ");
-  } else if (type == 4){
-    Serial.println("Pick Frequency:");
-    Serial.println("Type 1 for 433Mhz \t Type 2 for 868Mhz");
-  }
+    // Serial.println("get serial");
 
-  while (!Serial.available()){
-      if (millis() - start < 10000){
-        delay(10);
-      } else {
-        return -1; // timeout
-      }
-  }
-  if ( Serial.available() > 0 ) {
-      input = Serial.readString();
-  }
-  if (type == 1){
-      if (!input.toInt() ){
-          Serial.println("Sensor ID requires a number from 000 to 999");
-          Serial.print("You entered: ");
-          Serial.println(input);
-          return -1;
-      } else {
-          Serial.print(">>");
-          Serial.print(input);
-          input.toCharArray(temp,4);
-          strcpy(inputProps.sense_id, temp);
-          return 1;
-      }
-  } else if( type == 2 || type == 3) {
-        input.toUpperCase();
-        input.replace("\n","");
-        input.replace("\r","");
-        if (input.length() != 3){
-            if (type == 2){
-                Serial.println("SITE ID requires 3 characters.");
-            } else if(type == 3){
-                Serial.println("area ID requires 3 characters.");
-            } 
-            Serial.print("You entered: ");
-            Serial.println(input);
-        } else {
-            if (type == 2){
-                input.toCharArray(temp,4);
-                strcpy(inputProps.SITE, temp);
-            } else if(type == 3){
-                input.toCharArray(temp,4);
-                strcpy(inputProps.area, temp);
-          } 
-          Serial.print(">>");
-          Serial.print(input);
-          return 1;
-      }
-  } else if (type == 4){
-        input.replace("\n","");
-        input.replace("\r","");
-        if (!input.toInt() ){
-            Serial.println("Pick Frequency require 1 or 2.");
-            Serial.print("You entered: ");
-            Serial.println(input);
-            return -1;
-        } else {
-            Serial.print(">>");
-            if (input == "1"){
-                Serial.print("433Mhz");
-            } else if ( input == "2"){
-                Serial.print("868Mhz");
+    do{
+        if(Serial.available()>0){
+            inChar = Serial.read();
+
+            if (inChar>'/' && inChar<'['){
+                input[i] = inChar;
+                i++;
             }
-            inputProps.freq = input.toInt();
-            return 1;
-      }
-  }
-  return -1;
+        }
+    }while(inChar!='\r' && millis()-start<10000);
+
+    // Serial.println(millis()-start);/**/
+
+    // Serial.println("end get serial");
+
 }
+
+// test: MNG;TST;131;1;1
+// test: MNG;TST;131;3;1
+// test: MNG;TST;131;1;3
+// test: MNG;TST;131;1;1
+// test: HHH;EEE;222;1;1
+
+void getSensorProps(){
+    char serialInput[50];
+    char inputForProcessing[50];
+    char *_props[5];
+    char *ptr=NULL;
+    byte index = 0;
+    char isPropsValid = false;
+
+    Serial.setTimeout(1000);
+
+    assignNull(serialInput,50);
+
+    while(!Serial);
+
+    Serial.println(">> Enter sensor properties (10 sec timeout)");
+    Serial.println(">> Send [x] to exit ");
+    Serial.println("AREA[3]-SITE[3]-ID[3]");
+
+    for (int r=0; r<5; r++){
+        index = 0;
+        char *ptr=NULL;
+
+        Serial.print("> ");
+        getSerialInput(serialInput);
+
+        Serial.println(serialInput);
+
+        if (serialInput[0]=='\0') continue;
+        else if (serialInput[0]=='x') break;
+
+        ptr = strtok(serialInput,";");
+        while(ptr != NULL){
+            _props[index] = ptr;
+            index++;
+            ptr = strtok(NULL,";");
+        };
+
+        if (index<4){
+            Serial.println("ERROR: Missing properties");
+        }
+        else if (
+            strlen(_props[0])!=3 || 
+            strlen(_props[1])!=3 || 
+            strlen(_props[2])!=3)
+        {
+            Serial.println("ERROR: Invalid name properties");
+            Serial.println(_props[0]);
+            Serial.println(_props[1]);
+            Serial.println(_props[2]);
+
+        }
+        else if (_props[3][0] != '1' && _props[3][0] != '2')
+        {
+            Serial.println("ERROR: unknown freq option");
+            Serial.println(_props[3][0]);
+        }
+        else if (_props[4][0] != '1' &&  _props[4][0] != '2')
+        {
+            Serial.println("ERROR: unknown soms type option");
+            Serial.println(_props[4][0]);
+        }
+        else{
+            Serial.println("Valid properties");
+            for(int n = 0; n < index; n++)
+            { 
+                Serial.print(_props[n]);
+                Serial.print(" - ");
+            }
+            Serial.println("");
+            isPropsValid = true;
+            break;
+        }    
+
+        assignNull(serialInput, 50);
+    }
+
+    if (isPropsValid){
+
+        Serial.print("Assigning properties...");
+
+        strncpy(this_sensor.area, _props[0],3);
+        strncpy(this_sensor.site, _props[1],3);
+        strncpy(this_sensor.sense_id, _props[2],3);
+        
+        if (_props[3][0] == '1'){
+            this_sensor.rf95_freq = 433.0;
+        } else {
+            this_sensor.rf95_freq = 868.0; 
+        }  
+
+        if (_props[4][0] == '1'){
+            this_sensor.soms_type = 2; // HC-10
+        } else {
+            this_sensor.soms_type = 1; // ECHO-5
+        } 
+
+        Serial.println("done");
+    }
+
+}
+
+void assignNull(char *txt, uint16_t len)
+{
+  for (int i = 0; i < len; i++) txt[i] = '\0';
+}
+
