@@ -1,182 +1,107 @@
 void buildID(char *line, char *sensor)
 {
-  assignNull(line);
-  strcpy(line, keyValueOutput[0].AREA);
+  assignNull(line,RH_RF95_MAX_MESSAGE_LEN);
+  strcpy(line, this_sensor.area);
 
   strcat(line, "-");
-  strcat(line, keyValueOutput[0].SITE);
+  strcat(line, this_sensor.site);
   strcat(line, "-");
   strcat(line, sensor);
-  strcat(line, keyValueOutput[0].SENSEID);
+  strcat(line, this_sensor.sense_id);
   strcat(line, terminator);
 }
 
-void sendLine2(char *line, int blinks){
+
+void sendLine3(char *line, int blinks, char *ackPrefix){
   uint8_t len = sizeof(buf);
-  char received[100];
   int retry = 0;
   int del = 1000;
   int trueLen = 0;
   bool correct_ack = false;
   unsigned long start = millis();
 
+  // uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+  // len = sizeof(buf);
+
   for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
   {
-      for (int iii = 0; iii < blinks; iii++)
-          blinkled();
-      assignNull(received); //clear buffer received
-      trueLen = strlen(line) + 1;
-      Serial.print("Sending: ");
-      Serial.println(line);
+    for (int iii = 0; iii < blinks; iii++) blinkled();
 
-      rf95.send((uint8_t *)line, trueLen); //send data
-      delay(10);
-      rf95.waitPacketSent();
-      Serial.println("Waiting for GATEWAY:AXL reply . . . ");
-      start = millis();
-      do {
-          // Should be a reply message for us now
-            // rf95.setModeRx();
-            
-            assignNull2(buf);
-                rf95.waitAvailableTimeout(del);
-                if (rf95.recv(buf, &len)){
-                    Serial.println((char*)buf);
-                    int i = 0;
-                    for (i = 0; i < len; i++) {
-                        received[i] = (uint8_t)buf[i];
-                    }
-                    received[i] = (uint8_t)'\0'; //NULL terminate
+    trueLen = strlen(line) + 1;
+    Serial.print("Sending: ");
+    Serial.println(line);
 
-                    if (ackNEW2(received)) {
-                        correct_ack = true;
-                        ii = SEND_RETRY_LIMIT;
-                        break;
-                    } 
-                    Serial.print("\t\t\t\t\t\t::");
-                    Serial.println((char *)buf);
-                    // Serial.print("Gateway RSSI: ");
-                    // Serial.println(rf95.lastRssi(), DEC);
-                } else {
-                  Serial.println(".");
-                }
-        } while ( correct_ack  || ( ( (millis() - start) < 3000 ) ) );
-      retry++;
-      // Serial.println("++++");
+    rf95.send((uint8_t *)line, trueLen); //send data
+    delay(10);
+    rf95.waitPacketSent();
+    // Serial.println(retry);
+    Serial.println("Waiting for GATEWAY reply ... ");
+    // Serial.println(del);
+    start = millis();
+    
+    Serial.print("Retry (");
+    Serial.print(ii);
+    Serial.println("): ");
+
+    do {
+        
+      rf95.waitAvailableTimeout(del);
+      if (rf95.recv(buf, &len)){
+        
+        Serial.print("Received::");
+        Serial.println((char *)buf);
+
+        // if (ackEval(buf, ackPrefix)) {
+        if (ackEval((char *)buf, ackPrefix)) {
+            correct_ack = true;
+            ii = SEND_RETRY_LIMIT;
+            Serial.println(" -> Correct");
+            break;
+        }
+
+        else{
+          Serial.println("Not a valid ACK");  
+        }
+
+        // Serial.print("Gateway RSSI: ");
+        // Serial.println(rf95.lastRssi(), DEC);
+        // assignNull(received);
+        // assignNull2(buf);
+        // memset(0, buf, sizeof(buf));
+        for (int l=0; l<len; l++) buf[l] = '\0';
+        // buf[0] = char(0);
+      } 
+      else Serial.print(".");
+     
+    } while ( correct_ack  || ( ( (millis() - start) < 3000 ) ) );
+    retry++;
+    if (retry>SEND_RETRY_LIMIT) Serial.println("ERROR: No Correct reply received");
   }
   Serial.println("..........................................");
 }
 
-
-void sendLine3(char *line, int blinks){
-  uint8_t len = sizeof(buf);
-  char received[100];
-  int retry = 0;
-  int del = 1000;
-  int trueLen = 0;
-  bool correct_ack = false;
-  unsigned long start = millis();
-
-  for (int ii = 0; ii < SEND_RETRY_LIMIT; ii++)
-  {
-      for (int iii = 0; iii < blinks; iii++)
-          blinkled();
-      assignNull(received); //clear buffer received
-      trueLen = strlen(line) + 1;
-      Serial.print("Sending: ");
-      Serial.println(line);
-
-      rf95.send((uint8_t *)line, trueLen); //send data
-      delay(10);
-      rf95.waitPacketSent();
-      // Serial.println(retry);
-      Serial.println("Waiting for GATEWAY:SMS reply . . . ");
-      // Serial.println(del);
-      start = millis();
-      do {
-          // Should be a reply message for us now
-            // rf95.setModeRx();
-            
-            assignNull2(buf);
-                rf95.waitAvailableTimeout(del);
-                if (rf95.recv(buf, &len)){
-                  Serial.println((char*)buf);
-                    int i = 0;
-                    for (i = 0; i < len; i++) {
-                        received[i] = (uint8_t)buf[i];
-                    }
-                    received[i] = (uint8_t)'\0'; //NULL terminate
-
-                    if (ackNEW3(received)) {
-                        correct_ack = true;
-                        ii = SEND_RETRY_LIMIT;
-                        break;
-                    } 
-                    Serial.print("\t\t\t\t\t\t::");
-                    Serial.println((char *)buf);
-                    // Serial.print("Gateway RSSI: ");
-                    // Serial.println(rf95.lastRssi(), DEC);
-                } else {
-                  Serial.println(".");
-                }
-        } while ( correct_ack  || ( ( (millis() - start) < 3000 ) ) );
-      retry++;
-      // Serial.println("++++");
-  }
-  Serial.println("..........................................");
-}
-
-bool ackNEW2(char *reply)
+bool ackEval(char *reply, char *rcvRply)
 {
   char searchACK[100];
-  assignNull(searchACK);
-  String rcvRply = "ACKAXL";
-  String newSenseId = String(keyValueOutput[0].SENSEID);
-  String finalSenseID = rcvRply + newSenseId;
-  finalSenseID.toCharArray(searchACK, 100);
+  searchACK[0]=char(0);
+
+  strncat(searchACK, rcvRply, 6);
+  strncat(searchACK, this_sensor.sense_id, 3);
+
 
   if (strstr(reply, searchACK))
-  {
-    Serial.print("Received correct ack: ");
-    Serial.println(searchACK);
     return true;
-  }
   else
-  {
-    Serial.println("NO ACKAXL!");
     return false;
-  }
 }
 
-bool ackNEW3(char *reply)
-{
-  char searchACK[100];
-  assignNull(searchACK);
-  String rcvRply = "ACKSMS";
-  String newSenseId = String(keyValueOutput[0].SENSEID);
-  String finalSenseID = rcvRply + newSenseId;
-  finalSenseID.toCharArray(searchACK, 100);
-
-  if (strstr(reply, searchACK))
-  {
-    Serial.print("Received correct ack: ");
-    Serial.println(searchACK);
-    return true;
-  }
-  else
-  {
-    Serial.println("NO ACKSMS!");
-    return false;
-  }
-}
-
-void buildLineAXL(char *line, struct scl_data dt)
+void buildLineAXL(char *line, struct SclData dt)
 {
   char sensorType[4] = "AXL";
   char tmpString[5];
   buildID(line, sensorType);
 
-  assignNull(tmpString);
+  assignNull(tmpString,5);
 
   dtostrf(dt.ang_x, 5, 4, tmpString);
   strcat(line, tmpString);
@@ -192,13 +117,13 @@ void buildLineAXL(char *line, struct scl_data dt)
   Serial.println(line);
 }
 
-void buildLineSMS(char *line, struct lgr_data dt)
+void buildLineSMS(char *line, struct LgrData dt)
 {
   char sensorType[4] = "SMS";
   char tmpString[5];
   buildID(line, "SMS");
 
-  assignNull(tmpString);
+  assignNull(tmpString,5);
   // insert "BTV:" - battery voltage here
   strcat(line, "BTV:");
   dtostrf(dt.vol, 5, 4, tmpString);
@@ -226,7 +151,7 @@ void buildLineSMS(char *line, struct lgr_data dt)
 void append_retry(char *line, int retry)
 {
   char tmpString[3];
-  assignNull(tmpString);
+  assignNull(tmpString, 3);
   strcat(line, ",crc");
   dtostrf(retry, 1, 0, tmpString); // removed extra white space
   strcat(line, tmpString);
@@ -238,14 +163,6 @@ void blinkled()
   delay(100);                      // wait for a second
   digitalWrite(LED_BUILTIN, LOW);  // turn the LED off by making the voltage LOW
   delay(100);                      // wait for a second
-}
-
-void assignNull(char *txt)
-{
-  for (int i = 0; i < strlen(txt); i++)
-  {
-    txt[i] = '\0';
-  }
 }
 
 void assignNull2(uint8_t *txt)
