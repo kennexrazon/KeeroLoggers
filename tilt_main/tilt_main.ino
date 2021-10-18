@@ -21,8 +21,11 @@
 // LRD -- ulit loop road
 // BACMAN - BCM // phase 5
 // LRD - 62 - 67  ( 62-63:m0,HS-10 || 64 - 65 32u4,ECHO5 || 66 - 67 32u4, HS-10) 
-
-//#define site "TST"
+// CBD - 76,77,78 433MHZ
+// PDH - 79,80 868MHZ
+// PDE - 73,74,75 433MHZ
+// PRS - 81,82,83 868MHZ
+// PLI - 84,85 433MHZ
 
 
 #include <math.h>
@@ -123,13 +126,13 @@ void setup()
             props_storage.write(this_sensor);
         #endif
     }
-// else{
+
     #if defined (ARDUINO_AVR_FEATHER32U4)
         EEPROM.readBlock(address, &this_sensor,1);
     #elif defined (ARDUINO_SAMD_ZERO)
         this_sensor = props_storage.read();
     #endif
-    // }
+
 
     displayConfig();
     
@@ -285,7 +288,7 @@ void getSerialInput(char *input){
 // test: MNG;TST;131;1;1
 // test: HHH;EEE;222;1;1
 
-void getSensorProps(){
+bool getSensorProps(){
     char serialInput[50];
     char inputForProcessing[50];
     char *_props[5];
@@ -301,7 +304,7 @@ void getSensorProps(){
 
     Serial.println(">> Enter sensor properties (10 sec timeout)");
     Serial.println(">> Send [x] to exit ");
-    Serial.println("AREA[3]-SITE[3]-ID[3]");
+    Serial.println("AREA[xxx];SITE[xxx];ID[xxx];FREQ[1 or 2];SOMS_TYPE[1 or 2]");
 
     for (int r=0; r<5; r++){
         index = 0;
@@ -324,6 +327,7 @@ void getSensorProps(){
 
         if (index<4){
             Serial.println("ERROR: Missing properties");
+
         }
         else if (
             strlen(_props[0])!=3 || 
@@ -345,6 +349,10 @@ void getSensorProps(){
         {
             Serial.println("ERROR: unknown soms type option");
             Serial.println(_props[4][0]);
+        } 
+        else if(r == 4){
+            Serial.println("ERROR: reached limit.");
+            return isPropsValid;
         }
         else{
             Serial.println("Valid properties");
@@ -382,6 +390,7 @@ void getSensorProps(){
         } 
 
         Serial.println("done");
+        return isPropsValid;
     }
 
 }
