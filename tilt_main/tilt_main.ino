@@ -1,62 +1,5 @@
-#include <math.h>
-#include <SPI.h>
-#include <RH_RF95.h>
-#include <Wire.h>
-#include <Adafruit_SleepyDog.h>
-
-const int AccSelectPin = A5;
-SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
-
-struct keyValuePair 
-{
-    char SENSEID[4];
-    char AREA[4];
-    char SITE[4];
-    int FREQ;
-    int  SOMS_SENSOR;
-};
-
-keyValuePair keyValueInput[1];
-keyValuePair keyValueOutput[1];
-
-#if defined (ARDUINO_SAMD_ZERO)
-  #include <avr/dtostrf.h>
-  #include <FlashStorage.h>
-  #define FLASH_DEBUG       0
-  #define RFM95_CS 8
-  #define RFM95_RST 4
-  #define RFM95_INT 3
-  #define VBATPIN A7
-  const int WRITTEN_SIGNATURE = 0xBEEFDEED;
-  FlashStorage(flashStorage,keyValuePair);
-  #define  MICROCON "M0"
-#elif defined (ARDUINO_AVR_FEATHER32U4)
-  #include <EEPROMex.h> 
-  #define RFM95_CS 8
-  #define RFM95_RST 4
-  #define RFM95_INT 7
-  #define VBATPIN A9
-  #define MICROCON "32U4"
-#endif
-
-float RF95_FREQ; 
-const int address = 0;
-int SOMS_TYPE = 1;
-
-// struct keyValuePair 
-// {
-//     char SENSEID[4];
-//     char AREA[4];
-//     char SITE[4];
-//     int FREQ;
-//     int  SOMS_SENSOR;
-// };
-
-
-
-
-//#define SENSEID "04"
-//#define AREA "MGH"  
+//#define sense_id "04"
+//#define area "MGH"  
 // #define SomsSensor "ECHO5"
 // MSL - 19 - 21
 // SMR - 22 - 24s
@@ -80,6 +23,51 @@ int SOMS_TYPE = 1;
 // LRD - 62 - 67  ( 62-63:m0,HS-10 || 64 - 65 32u4,ECHO5 || 66 - 67 32u4, HS-10) 
 
 //#define SITE "TST"
+
+#include <math.h>
+#include <SPI.h>
+#include <RH_RF95.h>
+#include <Wire.h>
+#include <Adafruit_SleepyDog.h>
+
+const int AccSelectPin = A5;
+SPISettings settingSCA(2000000, MSBFIRST, SPI_MODE0);
+
+
+#if defined (ARDUINO_SAMD_ZERO)
+  #include <avr/dtostrf.h>
+  #include <FlashStorage_SAMD.h>
+  #define FLASH_DEBUG       0
+  #define RFM95_CS 8
+  #define RFM95_RST 4
+  #define RFM95_INT 3
+  #define VBATPIN A7
+  const int WRITTEN_SIGNATURE = 0xBEEFDEED;
+  #define  MICROCON "M0"
+#elif defined (ARDUINO_AVR_FEATHER32U4)
+  #include <EEPROMex.h> 
+  #define RFM95_CS 8
+  #define RFM95_RST 4
+  #define RFM95_INT 7
+  #define VBATPIN A9
+  #define MICROCON "32U4"
+#endif
+
+float rf95_freq; 
+const int address = 0;
+int SOMS_TYPE = 1;
+
+struct SensorProps
+{
+    char sense_id[4];
+    char area[4];
+    char SITE[4];
+    int freq;
+    int soms_type;
+};
+
+SensorProps inputProps;
+SensorProps outputProps;
 
 #define terminator "$"
 #define somsPin A3
@@ -121,14 +109,13 @@ void setup()
     #if defined (ARDUINO_AVR_FEATHER32U4)
         EEPROM.readBlock(address, keyValueOutput,1);
     #elif defined (ARDUINO_SAMD_ZERO)
-        // EEPROM.read(address,keyValueOutput);
-        keyValueOutput[0] = flashStorage.read();
+        EEPROM.get(address,keyValueOutput);
     #endif
 
     displayConfig();
     
-    strncpy(line1,keyValueOutput[0].AREA,4);
-    strncpy(line3,keyValueOutput[0].AREA,4);
+    strncpy(line1,outputProps.area,4);
+    strncpy(line3,outputProps.area,4);
 
     pinMode(A0, OUTPUT);
     digitalWrite(A0,LOW);
@@ -145,14 +132,14 @@ void setup()
         delay(1000);
     }
 
-    if (!rf95.setFrequency(RF95_FREQ))
+    if (!rf95.setFrequency(rf95_freq))
     {
         Serial.println("setFrequency failed");
     }
     Serial.print("Set Freq to: ");
-    Serial.println(RF95_FREQ);
+    Serial.println(rf95_freq);
 
-    rf95.setTxPower(20, false);
+    rf95.setTxPower(23, false);
 
     Serial.println("done initializing......\n");
 
@@ -164,35 +151,35 @@ void setup()
 }
 
 void displayConfig(){
-    if (keyValueOutput[0].SENSEID[3] != '\0'){
-        strcpy(keyValueOutput[0].SENSEID, "999");
+    if (outputProps.sense_id[3] != '\0'){
+        strcpy(outputProps.sense_id, "999");
     }
 
-    if (keyValueOutput[0].AREA[3] != '\0'){
-        strcpy(keyValueOutput[0].AREA, "GEN");
+    if (outputProps.area[3] != '\0'){
+        strcpy(outputProps.area, "GEN");
     }
 
-    if ( keyValueOutput[0].SITE[3] != '\0'){
-        strcpy(keyValueOutput[0].SITE, "DEF");
+    if ( outputProps.SITE[3] != '\0'){
+        strcpy(outputProps.SITE, "DEF");
     }
 
-    if (keyValueOutput[0].FREQ == 1){
-        RF95_FREQ = 433.0;
+    if (outputProps.freq == 1){
+        rf95_freq = 433.0;
     } else {
-        RF95_FREQ = 868.0; 
+        rf95_freq = 868.0; 
     }  
 
-    if (keyValueOutput[0].SOMS_SENSOR == 1){
+    if (outputProps.soms_type == 1){
         SOMS_TYPE = 2; // HC-10
     } else {
         SOMS_TYPE = 1; // ECHO-5
     } 
 
-    Serial.print(keyValueOutput[0].SENSEID);
+    Serial.print(outputProps.sense_id);
     Serial.print("\t");
-    Serial.print(keyValueOutput[0].SITE);
+    Serial.print(outputProps.SITE);
     Serial.print("\t");
-    Serial.println(keyValueOutput[0].AREA);
+    Serial.println(outputProps.area);
 }
 void processData()
 {
@@ -209,7 +196,7 @@ void processData()
   Serial.println("#################################");
   
   digitalWrite(A0, HIGH);
-  delay(1000);
+  delay(5000);
 }
 
 void loop()
@@ -267,23 +254,26 @@ int storeToEeprom(){
     if (readFromSerial(area,temp1,3) > 0){
         Serial.println(">>>");
     } else {
-        Serial.println("Failed to save new AREA ID");
+        Serial.println("Failed to save new area ID");
         return -1;
     }
 
     if (readFromSerial(freq,temp1,4) > 0){
         Serial.println(">>>");
     } else {
-        Serial.println("Failed to save new FREQUENCY");
+        Serial.println("Failed to save new freqUENCY");
         return -1;
     }
     #if defined (ARDUINO_AVR_FEATHER32U4)
         EEPROM.writeBlock(address, keyValueInput,1);
     #elif defined (ARDUINO_SAMD_ZERO)
-        flashStorage.write(keyValueInput[0]);
+        EEPROM.put(address, keyValueInput);
+        if (!EEPROM.getCommitASAP())
+        {
+            Serial.println("CommitASAP not set. Need commit()");
+            EEPROM.commit();
+        }
     #endif
-    Serial.println("Storing done!");
-    return 1;
 }
 
 
@@ -294,7 +284,7 @@ int readFromSerial(String input,char *temp,int type){
   } else if (type == 2){
     Serial.println("New SITE ID (XXX): ");
   } else if (type == 3){
-    Serial.println("New AREA ID (XXX): ");
+    Serial.println("New area ID (XXX): ");
   } else if (type == 4){
     Serial.println("Pick Frequency:");
     Serial.println("Type 1 for 433Mhz \t Type 2 for 868Mhz");
@@ -320,7 +310,7 @@ int readFromSerial(String input,char *temp,int type){
           Serial.print(">>");
           Serial.print(input);
           input.toCharArray(temp,4);
-          strcpy(keyValueInput[0].SENSEID, temp);
+          strcpy(inputProps.sense_id, temp);
           return 1;
       }
   } else if( type == 2 || type == 3) {
@@ -331,17 +321,17 @@ int readFromSerial(String input,char *temp,int type){
             if (type == 2){
                 Serial.println("SITE ID requires 3 characters.");
             } else if(type == 3){
-                Serial.println("AREA ID requires 3 characters.");
+                Serial.println("area ID requires 3 characters.");
             } 
             Serial.print("You entered: ");
             Serial.println(input);
         } else {
             if (type == 2){
                 input.toCharArray(temp,4);
-                strcpy(keyValueInput[0].SITE, temp);
+                strcpy(inputProps.SITE, temp);
             } else if(type == 3){
                 input.toCharArray(temp,4);
-                strcpy(keyValueInput[0].AREA, temp);
+                strcpy(inputProps.area, temp);
           } 
           Serial.print(">>");
           Serial.print(input);
@@ -362,7 +352,7 @@ int readFromSerial(String input,char *temp,int type){
             } else if ( input == "2"){
                 Serial.print("868Mhz");
             }
-            keyValueInput[0].FREQ = input.toInt();
+            inputProps.freq = input.toInt();
             return 1;
       }
   }
