@@ -26,7 +26,10 @@
 // PDE - 73,74,75 433MHZ
 // PRS - 81,82,83 868MHZ
 // PLI - 84,85 433MHZ
-
+// APO
+// TCT 86, 87 433MHZ
+// PCO 88, 89 433MHZ
+// LTC 90 433MHZ
 
 #include <math.h>
 #include <SPI.h>
@@ -119,7 +122,6 @@ void setup()
 
     if (digitalRead(READPROPSPIN)==HIGH){
         if (getSensorProps()){
-        // storeToEeprom();
             #if defined (ARDUINO_AVR_FEATHER32U4)
                 EEPROM.writeBlock(address, &this_sensor, 1);
             #elif defined (ARDUINO_SAMD_ZERO)
