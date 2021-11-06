@@ -343,7 +343,7 @@ bool getSensorProps(){
             Serial.println(_props[2]);
 
         }
-        else if (_props[3][0] != '1' && _props[3][0] != '2')
+        else if (_props[3][0] != '1' && _props[3][0] != '2' && _props[3][0] != '3' )
         {
             Serial.println("ERROR: unknown freq option");
             Serial.println(_props[3][0]);
@@ -382,6 +382,8 @@ bool getSensorProps(){
         
         if (_props[3][0] == '1'){
             this_sensor.rf95_freq = 433.0;
+        }else if ( _props[3][0] == '3'){
+            this_sensor.rf95_freq = 900.0;
         } else {
             this_sensor.rf95_freq = 868.0; 
         }  
